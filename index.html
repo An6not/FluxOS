@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OriginOS Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="phone-frame">
+        <!-- Dynamic Island -->
+        <div class="dynamic-island">
+            <div class="island-content">
+                <span class="time" id="time">12:30</span>
+            </div>
+        </div>
+        
+        <div class="phone-screen">
+            <!-- Статус бар -->
+            <div class="status-bar">
+                <div class="status-left">
+                    <span class="time-status" id="timeStatus">12:30</span>
+                </div>
+                <div class="status-spacer"></div>
+                <div class="status-right">
+                    <span class="signal">📶</span>
+                    <span class="wifi">📡</span>
+                    <span class="battery">🔋 85%</span>
+                </div>
+            </div>
+
+            <!-- Домашний экран -->
+            <div class="home-screen" id="homeScreen">
+                <div class="wallpaper" id="wallpaper"></div>
+                
+                <!-- Виджет часов -->
+                <div class="widget-clock">
+                    <div class="widget-time" id="widgetTime">12:30</div>
+                    <div class="widget-date" id="widgetDate">Среда, 8 января</div>
+                </div>
+
+                <!-- Сетка иконок приложений -->
+                <div class="app-grid">
+                    <div class="app-icon" data-app="clock">
+                        <img src="./public/icons/OriginOs_icon/clock.png" class="icon-img" alt="Часы">
+                        <div class="app-name">Часы</div>
+                    </div>
+                    <div class="app-icon" data-app="calendar">
+                        <img src="./public/icons/OriginOs_icon/calendar.png" class="icon-img" alt="Календарь">
+                        <div class="app-name">Календарь</div>
+                    </div>
+                    <div class="app-icon" data-app="gallery">
+                        <img src="./public/icons/OriginOs_icon/gallery.png" class="icon-img" alt="Галерея">
+                        <div class="app-name">Галерея</div>
+                    </div>
+                    <div class="app-icon" data-app="settings">
+                        <img src="./public/icons/OriginOs_icon/settings.png" class="icon-img" alt="Настройки">
+                        <div class="app-name">Настройки</div>
+                    </div>
+                    <div class="app-icon" data-app="messages">
+                        <img src="./public/icons/OriginOs_icon/messages.png" class="icon-img" alt="Сообщения">
+                        <div class="app-name">Сообщения</div>
+                    </div>
+                    <div class="app-icon" data-app="phone">
+                        <img src="./public/icons/OriginOs_icon/phone.png" class="icon-img" alt="Телефон">
+                        <div class="app-name">Телефон</div>
+                    </div>
+                    <div class="app-icon" data-app="music">
+                        <img src="./public/icons/OriginOs_icon/music.png" class="icon-img" alt="Музыка">
+                        <div class="app-name">Музыка</div>
+                    </div>
+                    <div class="app-icon" data-app="files">
+                        <img src="./public/icons/OriginOs_icon/files.png" class="icon-img" alt="Файлы">
+                        <div class="app-name">Файлы</div>
+                    </div>
+                    <div class="app-icon" data-app="calculator">
+                        <img src="./public/icons/OriginOs_icon/calculator.png" class="icon-img" alt="Калькулятор">
+                        <div class="app-name">Калькулятор</div>
+                    </div>
+                    <div class="app-icon" data-app="compass">
+                        <img src="./public/icons/OriginOs_icon/compass.png" class="icon-img" alt="Компас">
+                        <div class="app-name">Компас</div>
+                    </div>
+                </div>
+
+                <!-- Док с основными приложениями -->
+                <div class="dock">
+                    <div class="dock-icon" data-app="messages">
+                        <img src="./public/icons/OriginOs_icon/messages.png" class="icon-img" alt="Сообщения">
+                    </div>
+                    <div class="dock-icon" data-app="phone">
+                        <img src="./public/icons/OriginOs_icon/phone.png" class="icon-img" alt="Телефон">
+                    </div>
+                    <div class="dock-icon" data-app="music">
+                        <img src="./public/icons/OriginOs_icon/music.png" class="icon-img" alt="Музыка">
+                    </div>
+                    <div class="dock-icon" data-app="gallery">
+                        <img src="./public/icons/OriginOs_icon/gallery.png" class="icon-img" alt="Галерея">
+                    </div>
+                </div>
+
+                <!-- Индикатор домашней кнопки -->
+                <div class="home-indicator"></div>
+            </div>
+
+            <!-- Экран приложения -->
+            <div class="app-screen" id="appScreen">
+                <div class="app-header">
+                    <button class="back-button" id="backButton">← Назад</button>
+                    <div class="app-title" id="appTitle">Приложение</div>
+                </div>
+                <div class="app-content" id="appContent">
+                    <p>Содержимое приложения</p>
+                </div>
+            </div>
+
+            <!-- Панель настроек обоев -->
+            <div class="settings-panel" id="settingsPanel">
+                <div class="settings-header">
+                    <h3>Настройки</h3>
+                    <button class="close-settings" id="closeSettings">✕</button>
+                </div>
+                <div class="settings-content">
+                    <h4>Выбор темы иконок</h4>
+                    <div class="icon-themes">
+                        <button class="theme-btn" data-theme="OriginOs_icon">OriginOS</button>
+                        <button class="theme-btn" data-theme="harmonyos_icon">HarmonyOS</button>
+                        <button class="theme-btn" data-theme="nothing_icon">Nothing</button>
+                        <button class="theme-btn" data-theme="pix_icon">Pixel</button>
+                        <button class="theme-btn" data-theme="i_icon">iOS</button>
+                    </div>
+                    <h4>Выбор обоев</h4>
+                    <div class="wallpaper-grid" id="wallpaperGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка настроек (вне телефона) -->
+    <button class="floating-settings-btn" id="floatingSettings">⚙️</button>
+
+    <script src="script.js"></script>
+</body>
+</html>
