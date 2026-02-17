@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft P2P - Global Online</title>
+    <title>AnnotCraft P2P - Ultimate Mobile 3D</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --p-color: #00ff88; --bg: #111; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; touch-action: none; }
+        canvas { display: block; touch-action: none; } /* Важно для мультитача */
 
         /* UI Overlay */
         #ui-overlay { position: absolute; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); transition: 0.3s; }
@@ -25,7 +25,8 @@
         #joystick-stick { position: absolute; top: 25px; left: 25px; width: 50px; height: 50px; background: var(--p-color); border-radius: 50%; opacity: 0.6; }
         
         /* Crosshair */
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 40; opacity: 0.5; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 2px; background: white; transform: translate(-50%, -50%); pointer-events: none; z-index: 40; opacity: 0.8; }
+        #crosshair::before { content: ''; position: absolute; left: 50%; top: 50%; width: 2px; height: 20px; background: white; transform: translate(-50%, -50%); }
     </style>
 </head>
 <body>
@@ -58,11 +59,30 @@
     <script>
         /** --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ --- **/
         const HOST_PASS = "1234"; // Твой пароль
+        const WORLD_SIZE = 25; // Мир будет 50x50 блоков (от -WORLD_SIZE до WORLD_SIZE)
+        const BLOCK_TYPES = {
+            GRASS: new THREE.MeshLambertMaterial({ color: 0x3d9940 }),
+            DIRT: new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+        };
+
         let myNick = "", isHost = false, peer = null, conn = null;
         let scene, camera, renderer, players = {}, moveDir = { x: 0, z: 0 };
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
-        let worldBlocks = [];
+        
+        let groundMesh, groundCount = 0; // Для InstancedMesh
+        let worldBlocks = new Map(); // Карта блоков { "x,y,z": MeshInstanceID }
+
+        // Мультитач переменные
+        let joystickTouchId = -1;
+        let cameraTouchId = -1;
+
+        // Кэширование геометрий для оптимизации
+        const _boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const _playerBodyGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16);
+        const _playerHeadGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+        const _playerArmLegGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.8, 8);
+
 
         /** --- СЕТЕВАЯ ЛОГИКА (PeerJS + STUN) --- **/
         function startLogin() {
@@ -77,7 +97,6 @@
         }
 
         function initPeer() {
-            // Конфигурация для работы через мобильный интернет (STUN Google)
             peer = new Peer({
                 config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
             });
@@ -87,13 +106,18 @@
                 document.getElementById('hud').innerHTML = `Ник: ${myNick}<br>Мой ID: ${id}`;
                 if (myNick === "Annot") {
                     isHost = true;
-                    document.getElementById('role-status').innerText = "Ты Хост";
+                    document.getElementById('role-status').innerText = "Ты Хост (Annot)";
                     document.getElementById('wait-msg').style.display = 'block';
                     peer.on('connection', (c) => { conn = c; setupNet(); });
                 } else {
                     document.getElementById('role-status').innerText = "Ты Гость";
                     document.getElementById('client-ui').style.display = 'block';
                 }
+            });
+
+            peer.on('error', (err) => {
+                console.error("PeerJS Error:", err.type);
+                alert("Ошибка сети: " + err.type + ". Попробуйте обновить страницу.");
             });
         }
 
@@ -113,11 +137,46 @@
             });
             conn.on('data', (data) => {
                 if (data.type === 'sync') updatePlayer(data);
-                if (data.type === 'place') placeBlock(data.pos, data.color, false);
+                if (data.type === 'place') placeBlock(data.pos, data.blockType, false); // BlockType теперь
             });
         }
 
         /** --- 3D ДВИЖОК (Three.js) --- **/
+        function createPlayerModel(color) {
+            const playerGroup = new THREE.Group();
+            const bodyMaterial = new THREE.MeshLambertMaterial({ color: color });
+            const headMaterial = new THREE.MeshLambertMaterial({ color: color });
+
+            const body = new THREE.Mesh(_playerBodyGeometry, bodyMaterial);
+            body.position.y = 0.6; // Тело над землей
+            playerGroup.add(body);
+
+            const head = new THREE.Mesh(_playerHeadGeometry, headMaterial);
+            head.position.y = 1.7; // Голова над телом
+            playerGroup.add(head);
+
+            // Пример: руки и ноги (для стикмена)
+            const armMaterial = new THREE.MeshLambertMaterial({ color: color });
+            const leftArm = new THREE.Mesh(_playerArmLegGeometry, armMaterial);
+            leftArm.position.set(-0.5, 1.2, 0); // Левая рука
+            playerGroup.add(leftArm);
+
+            const rightArm = new THREE.Mesh(_playerArmLegGeometry, armMaterial);
+            rightArm.position.set(0.5, 1.2, 0); // Правая рука
+            playerGroup.add(rightArm);
+            
+            const leftLeg = new THREE.Mesh(_playerArmLegGeometry, armMaterial);
+            leftLeg.position.set(-0.25, 0.2, 0); // Левая нога
+            playerGroup.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(_playerArmLegGeometry, armMaterial);
+            rightLeg.position.set(0.25, 0.2, 0); // Правая нога
+            playerGroup.add(rightLeg);
+
+
+            return playerGroup;
+        }
+
         function init3D() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87ceeb);
@@ -132,53 +191,67 @@
             light.position.set(10, 20, 10);
             scene.add(light, new THREE.AmbientLight(0x707070));
 
-            // Сетка земли
-            const geo = new THREE.BoxGeometry(1, 1, 1);
-            for(let x=-10; x<=10; x++) {
-                for(let z=-10; z<=10; z++) {
-                    placeBlock({x, y:0, z}, 0x3d9940, false);
+            // Сетка земли (InstancedMesh для оптимизации большого мира)
+            groundMesh = new THREE.InstancedMesh(_boxGeometry, BLOCK_TYPES.GRASS, (WORLD_SIZE * 2 + 1) * (WORLD_SIZE * 2 + 1));
+            let matrix = new THREE.Matrix4();
+            let i = 0;
+            for(let x=-WORLD_SIZE; x<=WORLD_SIZE; x++) {
+                for(let z=-WORLD_SIZE; z<=WORLD_SIZE; z++) {
+                    matrix.makeTranslation(x, 0, z); // Блоки на уровне Y=0
+                    groundMesh.setMatrixAt(i, matrix);
+                    worldBlocks.set(`${x},0,${z}`, i); // Запоминаем индекс инстанса
+                    i++;
                 }
             }
+            groundMesh.instanceMatrix.needsUpdate = true;
+            groundCount = i;
+            scene.add(groundMesh);
 
-            // Игрок
-            players.me = new THREE.Group();
+            // Твой персонаж
+            players.me = createPlayerModel(isHost ? 0x00ff88 : 0xff4444);
             scene.add(players.me);
-            camera.position.set(0, 1.7, 0);
+            players.me.position.y = 1; // Стартовая позиция
+            camera.position.set(0, 0.7, 0); // Камера внутри головы
             players.me.add(camera);
-            players.me.position.y = 1;
 
             setupControls();
             animate();
         }
 
-        function placeBlock(pos, color, send = true) {
-            const mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(1, 1, 1),
-                new THREE.MeshLambertMaterial({ color: color })
-            );
-            mesh.position.set(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
+        function placeBlock(pos, blockType, send = true) {
+            const x = Math.round(pos.x);
+            const y = Math.round(pos.y);
+            const z = Math.round(pos.z);
+            const key = `${x},${y},${z}`;
+
+            // Если блок уже есть, не ставим
+            if (worldBlocks.has(key)) return;
+
+            // Используем обычный Mesh для добавляемых блоков, т.к. их будет меньше, чем земли
+            const mesh = new THREE.Mesh(_boxGeometry, BLOCK_TYPES[blockType] || BLOCK_TYPES.DIRT);
+            mesh.position.set(x, y, z);
             scene.add(mesh);
-            worldBlocks.push(mesh);
+            worldBlocks.set(key, mesh); // Храним сам Mesh для новых блоков
             
             if(send && conn && conn.open) {
-                conn.send({ type: 'place', pos: mesh.position, color: color });
+                conn.send({ type: 'place', pos: mesh.position, blockType: blockType });
             }
         }
 
         function updatePlayer(data) {
             if (!players.friend) {
-                players.friend = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.8), new THREE.MeshLambertMaterial({color: 0xff4444}));
+                players.friend = createPlayerModel(isHost ? 0xff4444 : 0x00ff88);
                 scene.add(players.friend);
             }
-            players.friend.position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.2);
+            players.friend.position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.2); // Плавная интерполяция
             players.friend.rotation.y = data.ry;
         }
 
-        /** --- УПРАВЛЕНИЕ --- **/
+        /** --- УПРАВЛЕНИЕ (Мультитач + Клавиатура) --- **/
         function setupControls() {
             const speed = 0.12;
             
-            // Движение клавиатурой
+            // Клавиатура (ПК)
             window.addEventListener('keydown', (e) => {
                 if(e.code === 'KeyW') moveDir.z = -speed;
                 if(e.code === 'KeyS') moveDir.z = speed;
@@ -190,48 +263,104 @@
                 if(['KeyA', 'KeyD'].includes(e.code)) moveDir.x = 0;
             });
 
-            // Мышь и тач для строительства
+            // Мышь (ПК) - поворот камеры и стройка
+            document.body.addEventListener('click', () => {
+                if(document.getElementById('ui-overlay').style.display === 'none' && !document.pointerLockElement) {
+                    document.body.requestPointerLock();
+                }
+            });
+            document.addEventListener('mousemove', (e) => {
+                if(document.pointerLockElement) {
+                    players.me.rotation.y -= e.movementX * 0.002;
+                    camera.rotation.x -= e.movementY * 0.002;
+                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                }
+            });
+
+            // Строительство (клик/тап)
             window.addEventListener('pointerdown', (e) => {
-                if(e.target.tagName !== 'CANVAS') return;
+                if(e.target.tagName !== 'CANVAS' || document.getElementById('ui-overlay').style.display !== 'none') return;
                 
-                // Центр экрана для Raycaster
-                mouse.x = 0; mouse.y = 0;
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(worldBlocks);
+                // Для мобильных устройств игнорируем, если это был жест джойстика или камеры
+                if ('ontouchstart' in window) {
+                    if (e.clientX < window.innerWidth / 2 && joystickTouchId !== -1) return; // Левая половина - джойстик
+                    if (e.clientX >= window.innerWidth / 2 && cameraTouchId !== -1) return; // Правая половина - камера
+                }
+
+                // Raycaster из центра экрана
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+                
+                // Проверяем и InstancedMesh (землю), и обычные блоки
+                const intersects = raycaster.intersectObjects([groundMesh, ...Array.from(worldBlocks.values()).filter(o => o instanceof THREE.Mesh)]);
 
                 if (intersects.length > 0) {
                     const intersect = intersects[0];
                     const p = intersect.point.add(intersect.face.normal.clone().multiplyScalar(0.5));
-                    placeBlock(p, 0x8B4513, true); // Ставим коричневый блок
+                    placeBlock(p, 'DIRT', true); // Ставим земляной блок
                 }
             });
 
-            // Поворот камеры тачем
-            let lastTouchX = 0;
-            window.addEventListener('touchstart', (e) => lastTouchX = e.touches[0].clientX);
-            window.addEventListener('touchmove', (e) => {
-                if (e.touches[0].clientX > window.innerWidth / 2) {
-                    const deltaX = e.touches[0].clientX - lastTouchX;
-                    players.me.rotation.y -= deltaX * 0.01;
-                    lastTouchX = e.touches[0].clientX;
-                }
-            });
-
-            // Джойстик
+            // МУЛЬТИТАЧ ДЛЯ ДЖОЙСТИКА И КАМЕРЫ
             const zone = document.getElementById('joystick-zone');
             const stick = document.getElementById('joystick-stick');
-            zone.addEventListener('touchmove', (e) => {
-                const rect = zone.getBoundingClientRect();
-                const dx = e.touches[0].clientX - (rect.left + 50);
-                const dy = e.touches[0].clientY - (rect.top + 50);
-                const angle = Math.atan2(dy, dx);
-                moveDir.x = Math.cos(angle) * speed;
-                moveDir.z = Math.sin(angle) * speed;
-                stick.style.transform = `translate(${Math.cos(angle)*30}px, ${Math.sin(angle)*30}px)`;
-            });
-            zone.addEventListener('touchend', () => {
-                moveDir.x = 0; moveDir.z = 0;
-                stick.style.transform = `translate(0,0)`;
+
+            window.addEventListener('touchstart', (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.clientX < window.innerWidth / 2 && joystickTouchId === -1) { // Левая половина - джойстик
+                        joystickTouchId = touch.identifier;
+                        zone.style.left = `${touch.clientX - 50}px`; // Перемещаем джойстик под палец
+                        zone.style.top = `${touch.clientY - 50}px`;
+                        zone.style.display = 'block';
+                    } else if (touch.clientX >= window.innerWidth / 2 && cameraTouchId === -1) { // Правая половина - камера
+                        cameraTouchId = touch.identifier;
+                    }
+                }
+            }, {passive: false});
+
+            window.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // Предотвращаем скролл
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === joystickTouchId) { // Движение джойстика
+                        const rect = zone.getBoundingClientRect();
+                        const centerX = rect.left + rect.width/2;
+                        const centerY = rect.top + rect.height/2;
+                        let dx = touch.clientX - centerX;
+                        let dy = touch.clientY - centerY;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const max = 30; // Радиус джойстика
+                        if(dist > max) { dx *= max/dist; dy *= max/dist; }
+                        stick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+                        const angle = Math.atan2(dy, dx);
+                        moveDir.x = Math.cos(angle) * speed;
+                        moveDir.z = Math.sin(angle) * speed;
+                    } else if (touch.identifier === cameraTouchId) { // Вращение камеры
+                        const sensitivity = 0.005;
+                        const deltaX = touch.clientX - lastTouchX;
+                        const deltaY = touch.clientY - lastTouchY;
+                        players.me.rotation.y -= deltaX * sensitivity;
+                        camera.rotation.x -= deltaY * sensitivity;
+                        camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                    }
+                }
+                lastTouchX = e.touches[0] ? e.touches[0].clientX : lastTouchX; // Обновляем для вращения камеры
+                lastTouchY = e.touches[0] ? e.touches[0].clientY : lastTouchY;
+            }, {passive: false});
+
+            window.addEventListener('touchend', (e) => {
+                for(let i=0; i<e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === joystickTouchId) {
+                        joystickTouchId = -1;
+                        stick.style.transform = `translate(0,0)`;
+                        moveDir.x = 0; moveDir.z = 0;
+                        zone.style.display = 'none'; // Скрываем джойстик, пока не активен
+                    } else if (touch.identifier === cameraTouchId) {
+                        cameraTouchId = -1;
+                    }
+                }
             });
         }
 
@@ -257,6 +386,17 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // Обработка смены ориентации экрана
+        if (screen.orientation && screen.orientation.addEventListener) {
+            screen.orientation.addEventListener('change', () => {
+                setTimeout(() => { // Небольшая задержка, чтобы браузер успел перерисовать
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 100);
+            });
+        }
     </script>
 </body>
 </html>
