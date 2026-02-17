@@ -3,77 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft P2P 3D</title>
+    <title>AnnotCraft P2P - Global Online</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --p-color: #00ff88; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-        canvas { display: block; }
+        :root { --p-color: #00ff88; --bg: #111; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; touch-action: none; }
 
-        /* UI */
-        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
-        .window { background: #222; padding: 20px; border-radius: 10px; border: 2px solid var(--p-color); text-align: center; color: #fff; width: 300px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 5px; background: #333; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: var(--p-color); border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px; }
-
-        /* Игровые элементы */
-        #hud { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; font-size: 12px; z-index: 50; }
-        #fs-btn { position: absolute; top: 10px; right: 10px; z-index: 200; padding: 8px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px; }
+        /* UI Overlay */
+        #ui-overlay { position: absolute; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); transition: 0.3s; }
+        .window { background: #222; padding: 30px; border-radius: 20px; border: 2px solid var(--p-color); text-align: center; color: #fff; width: 320px; box-shadow: 0 0 20px var(--p-color); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #444; border-radius: 8px; background: #333; color: #fff; font-size: 16px; outline: none; }
+        button { width: 100%; padding: 14px; background: var(--p-color); border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; color: #000; margin-top: 10px; }
         
-        /* Джойстик */
-        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; }
-        #joystick-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: var(--p-color); border-radius: 50%; opacity: 0.8; }
+        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; text-shadow: 1px 1px 2px black; z-index: 50; }
+        #fs-btn { position: absolute; top: 20px; right: 20px; z-index: 200; padding: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid white; border-radius: 5px; }
+
+        /* Joystick */
+        #joystick-zone { position: absolute; bottom: 50px; left: 50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 1px solid rgba(255,255,255,0.3); }
+        #joystick-stick { position: absolute; top: 25px; left: 25px; width: 50px; height: 50px; background: var(--p-color); border-radius: 50%; opacity: 0.6; }
+        
+        /* Crosshair */
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 40; opacity: 0.5; }
     </style>
 </head>
 <body>
 
-    <button id="fs-btn" onclick="toggleFS()">Full Screen</button>
-    <div id="hud">Статус: Ожидание входа...</div>
+    <button id="fs-btn" onclick="toggleFS()">[ ] Fullscreen</button>
+    <div id="hud">ID: Ожидание...<br>Ник: -</div>
+    <div id="crosshair"></div>
 
     <div id="ui-overlay">
         <div class="window" id="login-win">
-            <h2>AnnotCraft 3D</h2>
-            <input type="text" id="nick-in" placeholder="Ник" value="Annot">
-            <div id="pass-field" style="display: block;">
-                <input type="password" id="pass-in" placeholder="Пароль хоста">
-            </div>
-            <button onclick="startLogin()">Войти</button>
+            <h2 style="margin-top:0">AnnotCraft</h2>
+            <input type="text" id="nick-in" placeholder="Твой Ник" value="Annot">
+            <input type="password" id="pass-in" placeholder="Пароль (только для Annot)">
+            <button onclick="startLogin()">Войти в Мир</button>
         </div>
 
         <div class="window" id="connect-win" style="display: none;">
-            <h3 id="role-status">Настройка сети...</h3>
-            <p id="id-display" style="word-break: break-all; font-size: 14px;"></p>
+            <h3 id="role-status">Связь...</h3>
+            <p id="id-display" style="word-break: break-all; background: #111; padding: 10px; border-radius: 5px; font-family: monospace;"></p>
             <div id="client-ui" style="display: none;">
-                <input type="text" id="peer-id-in" placeholder="ID Хоста (Annot)">
-                <button onclick="connectToHost()">Подключиться</button>
+                <input type="text" id="peer-id-in" placeholder="Вставь ID Хоста">
+                <button onclick="connectToHost()">Подключиться к другу</button>
             </div>
-            <p id="wait-msg" style="display: none;">Ждем друга...</p>
+            <p id="wait-msg" style="display: none; color: var(--p-color);">Отправь ID другу и жди его появления</p>
         </div>
     </div>
 
     <div id="joystick-zone"><div id="joystick-stick"></div></div>
 
     <script>
-        /**
-         * CONFIG & GLOBALS
-         */
-        const HOST_PASS = "1234"; // ТВОЙ ПАРОЛЬ
+        /** --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ --- **/
+        const HOST_PASS = "1234"; // Твой пароль
         let myNick = "", isHost = false, peer = null, conn = null;
         let scene, camera, renderer, players = {}, moveDir = { x: 0, z: 0 };
-        let joystickActive = false;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let worldBlocks = [];
 
-        /**
-         * NETWORK & LOGIN
-         */
+        /** --- СЕТЕВАЯ ЛОГИКА (PeerJS + STUN) --- **/
         function startLogin() {
             myNick = document.getElementById('nick-in').value.trim();
             const pass = document.getElementById('pass-in').value;
-
-            if (myNick === "Annot" && pass !== HOST_PASS) {
-                alert("Неверный пароль хоста!");
-                return;
-            }
+            if (myNick === "Annot" && pass !== HOST_PASS) return alert("Доступ запрещен!");
 
             document.getElementById('login-win').style.display = 'none';
             document.getElementById('connect-win').style.display = 'block';
@@ -82,107 +77,108 @@
         }
 
         function initPeer() {
-            peer = new Peer();
+            // Конфигурация для работы через мобильный интернет (STUN Google)
+            peer = new Peer({
+                config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
+            });
+
             peer.on('open', (id) => {
-                const idDisp = document.getElementById('id-display');
+                document.getElementById('id-display').innerText = id;
+                document.getElementById('hud').innerHTML = `Ник: ${myNick}<br>Мой ID: ${id}`;
                 if (myNick === "Annot") {
                     isHost = true;
-                    idDisp.innerText = "Твой ID: " + id;
                     document.getElementById('role-status').innerText = "Ты Хост";
                     document.getElementById('wait-msg').style.display = 'block';
-                    listenForGuest();
+                    peer.on('connection', (c) => { conn = c; setupNet(); });
                 } else {
-                    idDisp.innerText = "Введи ID Annot";
                     document.getElementById('role-status').innerText = "Ты Гость";
                     document.getElementById('client-ui').style.display = 'block';
                 }
             });
         }
 
-        function listenForGuest() {
-            peer.on('connection', (c) => {
-                conn = c;
-                setupNet();
-            });
-        }
-
         function connectToHost() {
-            const hostId = document.getElementById('peer-id-in').value;
+            const hostId = document.getElementById('peer-id-in').value.trim();
+            if(!hostId) return alert("Введите ID!");
             conn = peer.connect(hostId);
             setupNet();
         }
 
         function setupNet() {
             conn.on('open', () => {
-                document.getElementById('ui-overlay').style.display = 'none';
-                if(window.innerWidth < 800) document.getElementById('joystick-zone').style.display = 'block';
+                document.getElementById('ui-overlay').style.opacity = '0';
+                setTimeout(() => document.getElementById('ui-overlay').style.display = 'none', 300);
+                if('ontouchstart' in window) document.getElementById('joystick-zone').style.display = 'block';
                 init3D();
             });
             conn.on('data', (data) => {
                 if (data.type === 'sync') updatePlayer(data);
+                if (data.type === 'place') placeBlock(data.pos, data.color, false);
             });
         }
 
-        /**
-         * 3D ENGINE
-         */
+        /** --- 3D ДВИЖОК (Three.js) --- **/
         function init3D() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb); // Небо
-            
+            scene.background = new THREE.Color(0x87ceeb);
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Оптимизация
+            renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
-            // Освещение
-            const light = new THREE.DirectionalLight(0xffffff, 1);
-            light.position.set(5, 10, 7.5);
-            scene.add(light);
-            scene.add(new THREE.AmbientLight(0x404040));
+            const light = new THREE.DirectionalLight(0xffffff, 1.2);
+            light.position.set(10, 20, 10);
+            scene.add(light, new THREE.AmbientLight(0x707070));
 
-            // Мир (Трава)
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = new THREE.MeshLambertMaterial({ color: 0x3d9940 });
-            const floor = new THREE.InstancedMesh(geometry, material, 400);
-            let i = 0;
-            for(let x=-10; x<10; x++) {
-                for(let z=-10; z<10; z++) {
-                    const matrix = new THREE.Matrix4().makeTranslation(x, -1, z);
-                    floor.setMatrixAt(i++, matrix);
+            // Сетка земли
+            const geo = new THREE.BoxGeometry(1, 1, 1);
+            for(let x=-10; x<=10; x++) {
+                for(let z=-10; z<=10; z++) {
+                    placeBlock({x, y:0, z}, 0x3d9940, false);
                 }
             }
-            scene.add(floor);
 
-            // Твой персонаж
+            // Игрок
             players.me = new THREE.Group();
-            const body = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({color: isHost ? 0x00ff88 : 0xff4444}));
-            players.me.add(body);
             scene.add(players.me);
-            camera.position.set(0, 1.6, 5);
-            players.me.add(camera); // Камера привязана к игроку
+            camera.position.set(0, 1.7, 0);
+            players.me.add(camera);
+            players.me.position.y = 1;
 
             setupControls();
             animate();
         }
 
+        function placeBlock(pos, color, send = true) {
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1, 1),
+                new THREE.MeshLambertMaterial({ color: color })
+            );
+            mesh.position.set(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
+            scene.add(mesh);
+            worldBlocks.push(mesh);
+            
+            if(send && conn && conn.open) {
+                conn.send({ type: 'place', pos: mesh.position, color: color });
+            }
+        }
+
         function updatePlayer(data) {
             if (!players.friend) {
-                const body = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color: isHost ? 0xff4444 : 0x00ff88}));
-                players.friend = body;
-                scene.add(body);
+                players.friend = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.8), new THREE.MeshLambertMaterial({color: 0xff4444}));
+                scene.add(players.friend);
             }
-            players.friend.position.set(data.x, data.y, data.z);
+            players.friend.position.lerp(new THREE.Vector3(data.x, data.y, data.z), 0.2);
             players.friend.rotation.y = data.ry;
         }
 
-        /**
-         * CONTROLS (Joystick + Mouse)
-         */
+        /** --- УПРАВЛЕНИЕ --- **/
         function setupControls() {
-            const speed = 0.1;
-            // Desktop WASD
+            const speed = 0.12;
+            
+            // Движение клавиатурой
             window.addEventListener('keydown', (e) => {
                 if(e.code === 'KeyW') moveDir.z = -speed;
                 if(e.code === 'KeyS') moveDir.z = speed;
@@ -194,69 +190,60 @@
                 if(['KeyA', 'KeyD'].includes(e.code)) moveDir.x = 0;
             });
 
-            // Mobile Joystick logic
-            const zone = document.getElementById('joystick-zone');
-            const stick = document.getElementById('joystick-stick');
-            zone.addEventListener('touchstart', () => joystickActive = true);
-            zone.addEventListener('touchmove', (e) => {
-                const touch = e.touches[0];
-                const rect = zone.getBoundingClientRect();
-                const centerX = rect.left + rect.width/2;
-                const centerY = rect.top + rect.height/2;
-                let dx = touch.clientX - centerX;
-                let dy = touch.clientY - centerY;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                const max = 40;
-                if(dist > max) { dx *= max/dist; dy *= max/dist; }
-                stick.style.transform = `translate(${dx}px, ${dy}px)`;
-                moveDir.x = (dx/max) * speed;
-                moveDir.z = (dy/max) * speed;
-            });
-            zone.addEventListener('touchend', () => {
-                joystickActive = false;
-                stick.style.transform = `translate(0,0)`;
-                moveDir.x = 0; moveDir.z = 0;
+            // Мышь и тач для строительства
+            window.addEventListener('pointerdown', (e) => {
+                if(e.target.tagName !== 'CANVAS') return;
+                
+                // Центр экрана для Raycaster
+                mouse.x = 0; mouse.y = 0;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(worldBlocks);
+
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    const p = intersect.point.add(intersect.face.normal.clone().multiplyScalar(0.5));
+                    placeBlock(p, 0x8B4513, true); // Ставим коричневый блок
+                }
             });
 
-            // Поворот камеры тачем (правая часть экрана)
+            // Поворот камеры тачем
+            let lastTouchX = 0;
+            window.addEventListener('touchstart', (e) => lastTouchX = e.touches[0].clientX);
             window.addEventListener('touchmove', (e) => {
                 if (e.touches[0].clientX > window.innerWidth / 2) {
-                    players.me.rotation.y -= e.movementX * 0.005 || 0;
-                }
-            }, {passive: false});
-            
-            // Mouse Lock для ПК
-            document.body.addEventListener('click', () => {
-                if(document.getElementById('ui-overlay').style.display === 'none') {
-                    document.body.requestPointerLock();
+                    const deltaX = e.touches[0].clientX - lastTouchX;
+                    players.me.rotation.y -= deltaX * 0.01;
+                    lastTouchX = e.touches[0].clientX;
                 }
             });
-            document.addEventListener('mousemove', (e) => {
-                if(document.pointerLockElement) {
-                    players.me.rotation.y -= e.movementX * 0.002;
-                }
+
+            // Джойстик
+            const zone = document.getElementById('joystick-zone');
+            const stick = document.getElementById('joystick-stick');
+            zone.addEventListener('touchmove', (e) => {
+                const rect = zone.getBoundingClientRect();
+                const dx = e.touches[0].clientX - (rect.left + 50);
+                const dy = e.touches[0].clientY - (rect.top + 50);
+                const angle = Math.atan2(dy, dx);
+                moveDir.x = Math.cos(angle) * speed;
+                moveDir.z = Math.sin(angle) * speed;
+                stick.style.transform = `translate(${Math.cos(angle)*30}px, ${Math.sin(angle)*30}px)`;
+            });
+            zone.addEventListener('touchend', () => {
+                moveDir.x = 0; moveDir.z = 0;
+                stick.style.transform = `translate(0,0)`;
             });
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Движение с учетом поворота
             const rot = players.me.rotation.y;
             players.me.position.x += moveDir.x * Math.cos(rot) + moveDir.z * Math.sin(rot);
             players.me.position.z += moveDir.z * Math.cos(rot) - moveDir.x * Math.sin(rot);
 
-            // Сетевая синхронизация
             if (conn && conn.open) {
-                conn.send({
-                    type: 'sync',
-                    x: players.me.position.x,
-                    y: players.me.position.y,
-                    z: players.me.position.z,
-                    ry: players.me.rotation.y
-                });
+                conn.send({ type: 'sync', x: players.me.position.x, y: players.me.position.y, z: players.me.position.z, ry: players.me.rotation.y });
             }
-
             renderer.render(scene, camera);
         }
 
