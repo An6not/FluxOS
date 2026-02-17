@@ -2,143 +2,274 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OriginOS Simulator</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AnnotCraft P2P 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --p-color: #00ff88; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+        canvas { display: block; }
+
+        /* UI */
+        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
+        .window { background: #222; padding: 20px; border-radius: 10px; border: 2px solid var(--p-color); text-align: center; color: #fff; width: 300px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 5px; background: #333; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: var(--p-color); border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+
+        /* Игровые элементы */
+        #hud { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; font-size: 12px; z-index: 50; }
+        #fs-btn { position: absolute; top: 10px; right: 10px; z-index: 200; padding: 8px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px; }
+        
+        /* Джойстик */
+        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; }
+        #joystick-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: var(--p-color); border-radius: 50%; opacity: 0.8; }
+    </style>
 </head>
 <body>
-    <div class="phone-frame">
-        <!-- Dynamic Island -->
-        <div class="dynamic-island">
-            <div class="island-content">
-                <span class="time" id="time">12:30</span>
+
+    <button id="fs-btn" onclick="toggleFS()">Full Screen</button>
+    <div id="hud">Статус: Ожидание входа...</div>
+
+    <div id="ui-overlay">
+        <div class="window" id="login-win">
+            <h2>AnnotCraft 3D</h2>
+            <input type="text" id="nick-in" placeholder="Ник" value="Annot">
+            <div id="pass-field" style="display: block;">
+                <input type="password" id="pass-in" placeholder="Пароль хоста">
             </div>
+            <button onclick="startLogin()">Войти</button>
         </div>
-        
-        <div class="phone-screen">
-            <!-- Статус бар -->
-            <div class="status-bar">
-                <div class="status-left">
-                    <span class="time-status" id="timeStatus">12:30</span>
-                </div>
-                <div class="status-spacer"></div>
-                <div class="status-right">
-                    <span class="signal">📶</span>
-                    <span class="wifi">📡</span>
-                    <span class="battery">🔋 85%</span>
-                </div>
+
+        <div class="window" id="connect-win" style="display: none;">
+            <h3 id="role-status">Настройка сети...</h3>
+            <p id="id-display" style="word-break: break-all; font-size: 14px;"></p>
+            <div id="client-ui" style="display: none;">
+                <input type="text" id="peer-id-in" placeholder="ID Хоста (Annot)">
+                <button onclick="connectToHost()">Подключиться</button>
             </div>
-
-            <!-- Домашний экран -->
-            <div class="home-screen" id="homeScreen">
-                <div class="wallpaper" id="wallpaper"></div>
-                
-                <!-- Виджет часов -->
-                <div class="widget-clock">
-                    <div class="widget-time" id="widgetTime">12:30</div>
-                    <div class="widget-date" id="widgetDate">Среда, 8 января</div>
-                </div>
-
-                <!-- Сетка иконок приложений -->
-                <div class="app-grid">
-                    <div class="app-icon" data-app="clock">
-                        <img src="./public/icons/OriginOs_icon/clock.png" class="icon-img" alt="Часы">
-                        <div class="app-name">Часы</div>
-                    </div>
-                    <div class="app-icon" data-app="calendar">
-                        <img src="./public/icons/OriginOs_icon/calendar.png" class="icon-img" alt="Календарь">
-                        <div class="app-name">Календарь</div>
-                    </div>
-                    <div class="app-icon" data-app="gallery">
-                        <img src="./public/icons/OriginOs_icon/gallery.png" class="icon-img" alt="Галерея">
-                        <div class="app-name">Галерея</div>
-                    </div>
-                    <div class="app-icon" data-app="settings">
-                        <img src="./public/icons/OriginOs_icon/settings.png" class="icon-img" alt="Настройки">
-                        <div class="app-name">Настройки</div>
-                    </div>
-                    <div class="app-icon" data-app="messages">
-                        <img src="./public/icons/OriginOs_icon/messages.png" class="icon-img" alt="Сообщения">
-                        <div class="app-name">Сообщения</div>
-                    </div>
-                    <div class="app-icon" data-app="phone">
-                        <img src="./public/icons/OriginOs_icon/phone.png" class="icon-img" alt="Телефон">
-                        <div class="app-name">Телефон</div>
-                    </div>
-                    <div class="app-icon" data-app="music">
-                        <img src="./public/icons/OriginOs_icon/music.png" class="icon-img" alt="Музыка">
-                        <div class="app-name">Музыка</div>
-                    </div>
-                    <div class="app-icon" data-app="files">
-                        <img src="./public/icons/OriginOs_icon/files.png" class="icon-img" alt="Файлы">
-                        <div class="app-name">Файлы</div>
-                    </div>
-                    <div class="app-icon" data-app="calculator">
-                        <img src="./public/icons/OriginOs_icon/calculator.png" class="icon-img" alt="Калькулятор">
-                        <div class="app-name">Калькулятор</div>
-                    </div>
-                    <div class="app-icon" data-app="compass">
-                        <img src="./public/icons/OriginOs_icon/compass.png" class="icon-img" alt="Компас">
-                        <div class="app-name">Компас</div>
-                    </div>
-                </div>
-
-                <!-- Док с основными приложениями -->
-                <div class="dock">
-                    <div class="dock-icon" data-app="messages">
-                        <img src="./public/icons/OriginOs_icon/messages.png" class="icon-img" alt="Сообщения">
-                    </div>
-                    <div class="dock-icon" data-app="phone">
-                        <img src="./public/icons/OriginOs_icon/phone.png" class="icon-img" alt="Телефон">
-                    </div>
-                    <div class="dock-icon" data-app="music">
-                        <img src="./public/icons/OriginOs_icon/music.png" class="icon-img" alt="Музыка">
-                    </div>
-                    <div class="dock-icon" data-app="gallery">
-                        <img src="./public/icons/OriginOs_icon/gallery.png" class="icon-img" alt="Галерея">
-                    </div>
-                </div>
-
-                <!-- Индикатор домашней кнопки -->
-                <div class="home-indicator"></div>
-            </div>
-
-            <!-- Экран приложения -->
-            <div class="app-screen" id="appScreen">
-                <div class="app-header">
-                    <button class="back-button" id="backButton">← Назад</button>
-                    <div class="app-title" id="appTitle">Приложение</div>
-                </div>
-                <div class="app-content" id="appContent">
-                    <p>Содержимое приложения</p>
-                </div>
-            </div>
-
-            <!-- Панель настроек обоев -->
-            <div class="settings-panel" id="settingsPanel">
-                <div class="settings-header">
-                    <h3>Настройки</h3>
-                    <button class="close-settings" id="closeSettings">✕</button>
-                </div>
-                <div class="settings-content">
-                    <h4>Выбор темы иконок</h4>
-                    <div class="icon-themes">
-                        <button class="theme-btn" data-theme="OriginOs_icon">OriginOS</button>
-                        <button class="theme-btn" data-theme="harmonyos_icon">HarmonyOS</button>
-                        <button class="theme-btn" data-theme="nothing_icon">Nothing</button>
-                        <button class="theme-btn" data-theme="pix_icon">Pixel</button>
-                        <button class="theme-btn" data-theme="i_icon">iOS</button>
-                    </div>
-                    <h4>Выбор обоев</h4>
-                    <div class="wallpaper-grid" id="wallpaperGrid"></div>
-                </div>
-            </div>
+            <p id="wait-msg" style="display: none;">Ждем друга...</p>
         </div>
     </div>
 
-    <!-- Кнопка настроек (вне телефона) -->
-    <button class="floating-settings-btn" id="floatingSettings">⚙️</button>
+    <div id="joystick-zone"><div id="joystick-stick"></div></div>
 
-    <script src="script.js"></script>
+    <script>
+        /**
+         * CONFIG & GLOBALS
+         */
+        const HOST_PASS = "1234"; // ТВОЙ ПАРОЛЬ
+        let myNick = "", isHost = false, peer = null, conn = null;
+        let scene, camera, renderer, players = {}, moveDir = { x: 0, z: 0 };
+        let joystickActive = false;
+
+        /**
+         * NETWORK & LOGIN
+         */
+        function startLogin() {
+            myNick = document.getElementById('nick-in').value.trim();
+            const pass = document.getElementById('pass-in').value;
+
+            if (myNick === "Annot" && pass !== HOST_PASS) {
+                alert("Неверный пароль хоста!");
+                return;
+            }
+
+            document.getElementById('login-win').style.display = 'none';
+            document.getElementById('connect-win').style.display = 'block';
+            
+            initPeer();
+        }
+
+        function initPeer() {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                const idDisp = document.getElementById('id-display');
+                if (myNick === "Annot") {
+                    isHost = true;
+                    idDisp.innerText = "Твой ID: " + id;
+                    document.getElementById('role-status').innerText = "Ты Хост";
+                    document.getElementById('wait-msg').style.display = 'block';
+                    listenForGuest();
+                } else {
+                    idDisp.innerText = "Введи ID Annot";
+                    document.getElementById('role-status').innerText = "Ты Гость";
+                    document.getElementById('client-ui').style.display = 'block';
+                }
+            });
+        }
+
+        function listenForGuest() {
+            peer.on('connection', (c) => {
+                conn = c;
+                setupNet();
+            });
+        }
+
+        function connectToHost() {
+            const hostId = document.getElementById('peer-id-in').value;
+            conn = peer.connect(hostId);
+            setupNet();
+        }
+
+        function setupNet() {
+            conn.on('open', () => {
+                document.getElementById('ui-overlay').style.display = 'none';
+                if(window.innerWidth < 800) document.getElementById('joystick-zone').style.display = 'block';
+                init3D();
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'sync') updatePlayer(data);
+            });
+        }
+
+        /**
+         * 3D ENGINE
+         */
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb); // Небо
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Оптимизация
+            document.body.appendChild(renderer.domElement);
+
+            // Освещение
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 10, 7.5);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x404040));
+
+            // Мир (Трава)
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshLambertMaterial({ color: 0x3d9940 });
+            const floor = new THREE.InstancedMesh(geometry, material, 400);
+            let i = 0;
+            for(let x=-10; x<10; x++) {
+                for(let z=-10; z<10; z++) {
+                    const matrix = new THREE.Matrix4().makeTranslation(x, -1, z);
+                    floor.setMatrixAt(i++, matrix);
+                }
+            }
+            scene.add(floor);
+
+            // Твой персонаж
+            players.me = new THREE.Group();
+            const body = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({color: isHost ? 0x00ff88 : 0xff4444}));
+            players.me.add(body);
+            scene.add(players.me);
+            camera.position.set(0, 1.6, 5);
+            players.me.add(camera); // Камера привязана к игроку
+
+            setupControls();
+            animate();
+        }
+
+        function updatePlayer(data) {
+            if (!players.friend) {
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshLambertMaterial({color: isHost ? 0xff4444 : 0x00ff88}));
+                players.friend = body;
+                scene.add(body);
+            }
+            players.friend.position.set(data.x, data.y, data.z);
+            players.friend.rotation.y = data.ry;
+        }
+
+        /**
+         * CONTROLS (Joystick + Mouse)
+         */
+        function setupControls() {
+            const speed = 0.1;
+            // Desktop WASD
+            window.addEventListener('keydown', (e) => {
+                if(e.code === 'KeyW') moveDir.z = -speed;
+                if(e.code === 'KeyS') moveDir.z = speed;
+                if(e.code === 'KeyA') moveDir.x = -speed;
+                if(e.code === 'KeyD') moveDir.x = speed;
+            });
+            window.addEventListener('keyup', (e) => {
+                if(['KeyW', 'KeyS'].includes(e.code)) moveDir.z = 0;
+                if(['KeyA', 'KeyD'].includes(e.code)) moveDir.x = 0;
+            });
+
+            // Mobile Joystick logic
+            const zone = document.getElementById('joystick-zone');
+            const stick = document.getElementById('joystick-stick');
+            zone.addEventListener('touchstart', () => joystickActive = true);
+            zone.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const rect = zone.getBoundingClientRect();
+                const centerX = rect.left + rect.width/2;
+                const centerY = rect.top + rect.height/2;
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const max = 40;
+                if(dist > max) { dx *= max/dist; dy *= max/dist; }
+                stick.style.transform = `translate(${dx}px, ${dy}px)`;
+                moveDir.x = (dx/max) * speed;
+                moveDir.z = (dy/max) * speed;
+            });
+            zone.addEventListener('touchend', () => {
+                joystickActive = false;
+                stick.style.transform = `translate(0,0)`;
+                moveDir.x = 0; moveDir.z = 0;
+            });
+
+            // Поворот камеры тачем (правая часть экрана)
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches[0].clientX > window.innerWidth / 2) {
+                    players.me.rotation.y -= e.movementX * 0.005 || 0;
+                }
+            }, {passive: false});
+            
+            // Mouse Lock для ПК
+            document.body.addEventListener('click', () => {
+                if(document.getElementById('ui-overlay').style.display === 'none') {
+                    document.body.requestPointerLock();
+                }
+            });
+            document.addEventListener('mousemove', (e) => {
+                if(document.pointerLockElement) {
+                    players.me.rotation.y -= e.movementX * 0.002;
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Движение с учетом поворота
+            const rot = players.me.rotation.y;
+            players.me.position.x += moveDir.x * Math.cos(rot) + moveDir.z * Math.sin(rot);
+            players.me.position.z += moveDir.z * Math.cos(rot) - moveDir.x * Math.sin(rot);
+
+            // Сетевая синхронизация
+            if (conn && conn.open) {
+                conn.send({
+                    type: 'sync',
+                    x: players.me.position.x,
+                    y: players.me.position.y,
+                    z: players.me.position.z,
+                    ry: players.me.rotation.y
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function toggleFS() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
