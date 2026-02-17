@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft: Definitive Edition</title>
+    <title>AnnotCraft: Bedrock Fix</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { 
-            --mc-bg: #c6c6c6; 
-            --mc-light: #ffffff; 
-            --mc-dark: #555555;
-        }
+        :root { --mc-bg: #c6c6c6; --mc-light: #ffffff; --mc-dark: #555555; }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
             background: #000; font-family: 'Courier New', monospace;
@@ -36,60 +32,64 @@
 
         /* HUD */
         #hud { position: absolute; top: 10px; left: 10px; color: #fff; text-shadow: 2px 2px #000; pointer-events: none; z-index: 500; font-size: 13px; }
-        #fps { color: #55ff55; }
-        #fs-btn { position: absolute; top: 10px; right: 10px; padding: 10px; background: rgba(0,0,0,0.5); color: #fff; border: 2px solid #fff; z-index: 1100; font-size: 10px; border-radius: 5px; }
+        #fps-box { display: block; }
+        #btn-pause { position: absolute; top: 10px; right: 80px; padding: 10px; background: rgba(0,0,0,0.5); color: #fff; border: 2px solid #fff; z-index: 1100; border-radius: 5px; }
 
-        /* Игровой слой */
+        /* Controls */
         #ui-layer { position: absolute; inset: 0; pointer-events: none; display: none; }
         #joy-base { position: absolute; bottom: 40px; left: 40px; width: 130px; height: 130px; background: rgba(255,255,255,0.1); border: 3px solid #fff; border-radius: 50%; pointer-events: auto; }
         #joy-stick { position: absolute; top: 40px; left: 40px; width: 50px; height: 50px; background: #fff; border-radius: 50%; opacity: 0.6; }
-        
         #actions { position: absolute; bottom: 25px; right: 20px; display: flex; flex-direction: column; gap: 12px; pointer-events: auto; }
-        .act-btn { 
-            width: 75px; height: 75px; background: rgba(0,0,0,0.4); border: 4px solid #fff; 
-            color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 12px;
-        }
-
-        #toolbar { 
-            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); 
-            display: flex; gap: 6px; background: rgba(0,0,0,0.8); padding: 6px; border: 3px solid #444; pointer-events: auto;
-        }
-        .slot { width: 42px; height: 42px; border: 2px solid #666; display: flex; align-items: center; justify-content: center; }
-        .slot.active { border-color: #fff; background: rgba(255,255,255,0.2); box-shadow: 0 0 10px #fff; }
-
+        .act-btn { width: 75px; height: 75px; background: rgba(0,0,0,0.4); border: 4px solid #fff; color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+        #toolbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(0,0,0,0.8); padding: 6px; border: 3px solid #444; pointer-events: auto; }
+        .slot { width: 42px; height: 42px; border: 2px solid #666; }
+        .slot.active { border-color: #fff; background: rgba(255,255,255,0.2); }
         #crosshair { position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; border: 2px solid #fff; transform: translate(-50%, -50%); pointer-events: none; opacity: 0.6; }
     </style>
 </head>
 <body>
 
-    <button id="fs-btn" onclick="toggleFS()">FULLSCREEN</button>
-    <div id="hud">FPS: <span id="fps">0</span><br>AnnotCraft v4.5</div>
+    <button id="btn-pause" onclick="switchM('settings')">||</button>
+    <div id="hud">
+        <div id="fps-box">FPS: <span id="fps">0</span></div>
+        AnnotCraft v5.0
+    </div>
     <div id="crosshair" style="display:none"></div>
 
     <div id="m-main" class="mc-screen">
         <div class="mc-panel">
-            <h1 style="margin:0 0 20px 0; color:#fff; text-shadow: 3px 3px #555;">ANNOT CRAFT</h1>
-            <button class="mc-btn" onclick="run('single')">ОДИНОЧНЫЙ МИР</button>
-            <button class="mc-btn" onclick="switchM('multi')">СЕТЕВАЯ ИГРА</button>
+            <h1 style="color:#fff; text-shadow: 3px 3px #555;">ANNOT CRAFT</h1>
+            <button class="mc-btn" onclick="run('single')">ИГРАТЬ</button>
+            <button class="mc-btn" onclick="switchM('multi')">СЕТЬ</button>
+            <button class="mc-btn" onclick="switchM('settings')">НАСТРОЙКИ</button>
         </div>
     </div>
 
     <div id="m-multi" class="mc-screen" style="display:none">
         <div class="mc-panel">
-            <h2 style="color:#fff;">СЕТЕВАЯ ИГРА</h2>
+            <h2>СЕТЕВАЯ ИГРА</h2>
             <input type="text" id="srv-id" class="mc-input" placeholder="Имя комнаты">
             <button class="mc-btn" onclick="run('host')">СОЗДАТЬ</button>
             <button class="mc-btn" onclick="run('join')">ВОЙТИ</button>
-            <button class="mc-btn" onclick="switchM('main')" style="font-size:12px;">НАЗАД</button>
+            <button class="mc-btn" onclick="switchM('main')">НАЗАД</button>
+        </div>
+    </div>
+
+    <div id="m-settings" class="mc-screen" style="display:none">
+        <div class="mc-panel">
+            <h2>НАСТРОЙКИ</h2>
+            <button class="mc-btn" onclick="toggleView()">ВИД: <span id="view-text">1 ЛИЦО</span></button>
+            <button class="mc-btn" onclick="toggleFPS()">FPS: <span id="fps-text">ВКЛ</span></button>
+            <button class="mc-btn" onclick="closeSettings()">ПРОДОЛЖИТЬ</button>
         </div>
     </div>
 
     <div id="ui-layer">
         <div id="toolbar">
-            <div class="slot active" id="s0" onclick="setM('DIRT',0)"><div style="width:30px;height:30px;background:#8b4513"></div></div>
-            <div class="slot" id="s1" onclick="setM('STONE',1)"><div style="width:30px;height:30px;background:#808080"></div></div>
-            <div class="slot" id="s2" onclick="setM('WOOD',2)"><div style="width:30px;height:30px;background:#6d4c41"></div></div>
-            <div class="slot" id="s3" onclick="setM('LEAVES',3)"><div style="width:30px;height:30px;background:#2e7d32"></div></div>
+            <div class="slot active" id="s0" onclick="setM('DIRT',0)"><div style="width:30px;height:30px;background:#8b4513;margin:4px"></div></div>
+            <div class="slot" id="s1" onclick="setM('STONE',1)"><div style="width:30px;height:30px;background:#808080;margin:4px"></div></div>
+            <div class="slot" id="s2" onclick="setM('WOOD',2)"><div style="width:30px;height:30px;background:#6d4c41;margin:4px"></div></div>
+            <div class="slot" id="s3" onclick="setM('LEAVES',3)"><div style="width:30px;height:30px;background:#2e7d32;margin:4px"></div></div>
         </div>
         <div id="actions">
             <div class="act-btn" id="b-jump">JUMP</div>
@@ -100,12 +100,12 @@
     </div>
 
     <script>
-        /** --- ТЕКСТУРЫ --- **/
+        /** --- ТЕКСТУРЫ & МАТЕРИАЛЫ --- **/
         function createTex(c1, c2, type) {
             const canv = document.createElement('canvas'); canv.width = 16; canv.height = 16;
             const ctx = canv.getContext('2d');
-            for(let x=0; x<16; x++){
-                for(let y=0; y<16; y++){
+            for(let x=0; x<16; x++) {
+                for(let y=0; y<16; y++) {
                     ctx.fillStyle = Math.random() > 0.8 ? c2 : c1;
                     if(type === 'grass_side' && y < 5) ctx.fillStyle = '#5a9a44';
                     ctx.fillRect(x, y, 1, 1);
@@ -120,7 +120,7 @@
             DIRT: new THREE.MeshLambertMaterial({ map: createTex('#8b4513', '#603010') }),
             STONE: new THREE.MeshLambertMaterial({ map: createTex('#808080', '#666666') }),
             WOOD: new THREE.MeshLambertMaterial({ map: createTex('#6d4c41', '#4d3020') }),
-            LEAVES: new THREE.MeshLambertMaterial({ map: createTex('#1b5e20', '#2e7d32'), transparent:true, opacity:0.9 }),
+            LEAVES: new THREE.MeshLambertMaterial({ map: createTex('#1b5e20', '#2e7d32'), transparent:true, opacity:0.85 }),
             GRASS: [
                 new THREE.MeshLambertMaterial({ map: createTex('#8b4513', '#5a9a44', 'grass_side') }),
                 new THREE.MeshLambertMaterial({ map: createTex('#8b4513', '#5a9a44', 'grass_side') }),
@@ -131,45 +131,58 @@
             ]
         };
 
-        /** --- МОДЕЛЬ СТИВА --- **/
+        /** --- МОДЕЛЬ --- **/
         function createSteve(skinColor) {
             const group = new THREE.Group();
             const skin = new THREE.MeshLambertMaterial({color: skinColor});
             const clothes = new THREE.MeshLambertMaterial({color: 0x00aaff});
-            
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skin); head.position.y = 1.6;
             const body = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.7, 0.25), clothes); body.position.y = 1.05;
-            
             const limbGeo = new THREE.BoxGeometry(0.2, 0.7, 0.2);
-            const armL = new THREE.Mesh(limbGeo, skin); armL.position.set(-0.35, 1.05, 0);
-            const armR = new THREE.Mesh(limbGeo, skin); armR.position.set(0.35, 1.05, 0);
-            const legL = new THREE.Mesh(limbGeo, new THREE.MeshLambertMaterial({color: 0x000088})); legL.position.set(-0.15, 0.35, 0);
-            const legR = legL.clone(); legR.position.x = 0.15;
-
-            group.add(head, body, armL, armR, legL, legR);
-            group.limbs = { armL, armR, legL, legR };
+            const aL = new THREE.Mesh(limbGeo, skin); aL.position.set(-0.35, 1.05, 0);
+            const aR = new THREE.Mesh(limbGeo, skin); aR.position.set(0.35, 1.05, 0);
+            const lL = new THREE.Mesh(limbGeo, new THREE.MeshLambertMaterial({color: 0x000088})); lL.position.set(-0.15, 0.35, 0);
+            const lR = lL.clone(); lR.position.x = 0.15;
+            group.add(head, body, aL, aR, lL, lR);
+            group.limbs = { aL, aR, lL, lR, head, body };
             return group;
         }
 
         /** --- ГЛОБАЛЫ --- **/
-        let scene, camera, renderer, peer, conn, isHost = false, gMode = 'none';
+        let scene, camera, renderer, peer, conn, gMode = 'none';
         let world = new Map(), players = {}, selM = 'DIRT', vY = 0, isGrounded = false;
-        let joyId = null, camId = null, lx, ly, lastFPS = 0;
-        let moveVec = { x: 0, z: 0 };
+        let joyId = null, camId = null, lx, ly, lastFPS = 0, moveVec = { x: 0, z: 0 };
+        let isFirstPerson = true, showFPS = true;
 
         function switchM(s) { document.querySelectorAll('.mc-screen').forEach(e => e.style.display = 'none'); document.getElementById('m-'+s).style.display = 'flex'; }
+        function closeSettings() { document.getElementById('m-settings').style.display = 'none'; }
         function setM(m, i) { selM = m; document.querySelectorAll('.slot').forEach(s => s.classList.remove('active')); document.getElementById('s'+i).classList.add('active'); }
+
+        function toggleView() {
+            isFirstPerson = !isFirstPerson;
+            document.getElementById('view-text').innerText = isFirstPerson ? "1 ЛИЦО" : "3 ЛИЦО";
+            if(players.me) {
+                players.me.visible = !isFirstPerson; // Скрываем себя в 1-м лице
+                camera.position.set(0, isFirstPerson ? 1.6 : 2.5, isFirstPerson ? 0 : -3);
+                if(!isFirstPerson) camera.lookAt(0, 1.6, 0);
+            }
+        }
+
+        function toggleFPS() {
+            showFPS = !showFPS;
+            document.getElementById('fps-text').innerText = showFPS ? "ВКЛ" : "ВЫКЛ";
+            document.getElementById('fps-box').style.display = showFPS ? 'block' : 'none';
+        }
 
         function run(m) {
             gMode = m;
             if(m === 'single') initGame();
             else {
                 const id = document.getElementById('srv-id').value || "world";
-                isHost = (m === 'host');
-                peer = isHost ? new Peer("annot_v45_" + id) : new Peer();
+                peer = (m === 'host') ? new Peer("annot_v50_" + id) : new Peer();
                 peer.on('open', () => {
-                    if(isHost) peer.on('connection', c => { conn = c; setupNet(); });
-                    else { conn = peer.connect("annot_v45_" + id); setupNet(); }
+                    if(m === 'host') peer.on('connection', c => { conn = c; setupNet(); });
+                    else { conn = peer.connect("annot_v50_" + id); setupNet(); }
                 });
             }
         }
@@ -177,18 +190,18 @@
         function setupNet() { conn.on('open', () => initGame()); conn.on('data', d => handleNet(d)); }
         function handleNet(d) {
             if(d.type === 'sync') {
-                if(!players.friend) { players.friend = createSteve(0xffccaa); scene.add(players.friend); }
-                players.friend.position.lerp(new THREE.Vector3(d.x, d.y, d.z), 0.2);
-                players.friend.rotation.y = d.ry;
-                animateLimbs(players.friend, d.mov);
+                if(!players.f) { players.f = createSteve(0xffccaa); scene.add(players.f); }
+                players.f.position.lerp(new THREE.Vector3(d.x, d.y, d.z), 0.3);
+                players.f.rotation.y = d.ry;
+                animSteve(players.f, d.mov);
             }
             if(d.type === 'place') build(d.pos, d.mat, false);
             if(d.type === 'break') destroy(d.pos, false);
         }
 
-        /** --- GAME ENGINE --- **/
+        /** --- ENGINE --- **/
         function initGame() {
-            document.querySelectorAll('.mc-screen').forEach(e => e.style.display = 'none');
+            switchM('none'); document.getElementById('m-main').style.display = 'none';
             document.getElementById('ui-layer').style.display = 'block';
             document.getElementById('crosshair').style.display = 'block';
 
@@ -196,34 +209,30 @@
             scene.background = new THREE.Color(0x87ceeb);
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
             
-            renderer = new THREE.WebGLRenderer({ 
-                antialias: false, 
-                powerPreference: "high-performance",
-                precision: "mediump" 
-            });
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", precision: "mediump" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             document.body.appendChild(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-            sun.position.set(10, 20, 10); scene.add(sun);
+            const sun = new THREE.DirectionalLight(0xffffff, 0.5); sun.position.set(10, 20, 10); scene.add(sun);
 
-            // Мир
             const geo = new THREE.BoxGeometry(1, 1, 1);
-            for(let x=-15; x<=15; x++) {
-                for(let z=-15; z<=15; z++) {
-                    const b = new THREE.Mesh(geo, MATS.GRASS);
-                    b.position.set(x, 0, z); b.frustumCulled = true;
+            for(let x=-12; x<=12; x++) {
+                for(let z=-12; z<=12; z++) {
+                    const b = new THREE.Mesh(geo, MATS.GRASS); b.position.set(x, 0, z);
                     scene.add(b); world.set(`${x},0,${z}`, b);
                 }
             }
 
             players.me = createSteve(0x00ff88);
-            players.me.position.set(0, 5, 0);
+            players.me.position.set(0, 2, 0); // Начальная высота над полом
             scene.add(players.me);
             players.me.add(camera);
-            camera.position.set(0, 0.6, 0); // Высота глаз
+            
+            // Сброс камеры по умолчанию (1 лицо)
+            players.me.visible = false;
+            camera.position.set(0, 1.6, 0);
 
             setupControls();
             loop();
@@ -231,7 +240,7 @@
 
         function checkCol(p) {
             const x = Math.round(p.x), y = Math.floor(p.y), z = Math.round(p.z);
-            // Проверка тела (два блока в высоту)
+            // Проверка под ногами + центр тела
             return world.has(`${x},${y},${z}`) || world.has(`${x},${y+1},${z}`);
         }
 
@@ -252,22 +261,17 @@
             }
         }
 
-        function animateLimbs(p, mov) {
+        function animSteve(p, mov) {
             const t = Date.now() * 0.01;
             if(mov) {
-                p.limbs.armL.rotation.x = Math.sin(t) * 0.5;
-                p.limbs.armR.rotation.x = -Math.sin(t) * 0.5;
-                p.limbs.legL.rotation.x = -Math.sin(t) * 0.5;
-                p.limbs.legR.rotation.x = Math.sin(t) * 0.5;
-            } else {
-                p.limbs.armL.rotation.x = p.limbs.armR.rotation.x = 0;
-                p.limbs.legL.rotation.x = p.limbs.legR.rotation.x = 0;
-            }
+                p.limbs.aL.rotation.x = Math.sin(t)*0.6; p.limbs.aR.rotation.x = -Math.sin(t)*0.6;
+                p.limbs.lL.rotation.x = -Math.sin(t)*0.6; p.limbs.lR.rotation.x = Math.sin(t)*0.6;
+            } else { p.limbs.aL.rotation.x = p.limbs.aR.rotation.x = p.limbs.lL.rotation.x = p.limbs.lR.rotation.x = 0; }
         }
 
         function setupControls() {
             const ray = new THREE.Raycaster();
-            document.getElementById('b-jump').onpointerdown = (e) => { e.stopPropagation(); if(isGrounded) vY = 0.25; };
+            document.getElementById('b-jump').onpointerdown = (e) => { e.stopPropagation(); if(isGrounded) vY = 0.22; };
             document.getElementById('b-place').onpointerdown = () => {
                 ray.setFromCamera(new THREE.Vector2(0,0), camera);
                 const h = ray.intersectObjects(Array.from(world.values()));
@@ -279,7 +283,6 @@
                 if(h.length > 0) destroy(h[0].object.position, true);
             };
 
-            window.onmousedown = (e) => { if(e.button === 0) lx = e.clientX; ly = e.clientY; };
             window.addEventListener('touchstart', e => {
                 for(let t of e.changedTouches) {
                     if(t.clientX < window.innerWidth/2) joyId = t.identifier;
@@ -293,11 +296,11 @@
                         const r = document.getElementById('joy-base').getBoundingClientRect();
                         const dx = t.clientX - (r.left + 65), dy = t.clientY - (r.top + 65);
                         const d = Math.min(50, Math.sqrt(dx*dx+dy*dy)), a = Math.atan2(dy, dx);
-                        moveVec = { x: Math.cos(a)*(d/50)*0.15, z: Math.sin(a)*(d/50)*0.15 };
+                        moveVec = { x: Math.cos(a)*(d/50)*0.14, z: Math.sin(a)*(d/50)*0.14 };
                         document.getElementById('joy-stick').style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
                     } else if(t.identifier === camId) {
                         players.me.rotation.y -= (t.clientX - lx) * 0.007;
-                        camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x - (t.clientY - ly) * 0.007));
+                        camera.rotation.x = Math.max(-1.4, Math.min(1.4, camera.rotation.x - (t.clientY - ly) * 0.007));
                         lx = t.clientX; ly = t.clientY;
                     }
                 }
@@ -316,23 +319,32 @@
             if(t - lastFPS > 500) { document.getElementById('fps').innerText = Math.round(1000/(t-lastFPS)*30); lastFPS = t; }
 
             if(players.me) {
-                // Гравитация
-                vY -= 0.015; players.me.position.y += vY;
+                // Продвинутая гравитация и анти-провал
+                vY -= 0.012; 
+                players.me.position.y += vY;
+
+                // Проверка пола
                 if(checkCol({x: players.me.position.x, y: players.me.position.y, z: players.me.position.z})) {
-                    if(vY < 0) { vY = 0; isGrounded = true; }
+                    if(vY < 0) { 
+                        vY = 0; 
+                        isGrounded = true; 
+                        players.me.position.y = Math.floor(players.me.position.y) + 1; // Выталкивание на блок
+                    }
                 } else { isGrounded = false; }
 
-                // Перемещение
+                // Если упали ниже мира
+                if(players.me.position.y < -5) players.me.position.set(0, 5, 0);
+
                 const r = players.me.rotation.y;
                 const dx = moveVec.x * Math.cos(r) + moveVec.z * Math.sin(r);
                 const dz = moveVec.z * Math.cos(r) - moveVec.x * Math.sin(r);
                 
-                if(!checkCol({x: players.me.position.x + dx, y: players.me.position.y + 0.1, z: players.me.position.z + dz})) {
+                if(!checkCol({x: players.me.position.x + dx, y: players.me.position.y + 0.5, z: players.me.position.z + dz})) {
                     players.me.position.x += dx; players.me.position.z += dz;
                 }
 
                 const mov = Math.abs(moveVec.x) > 0.01 || Math.abs(moveVec.z) > 0.01;
-                animateLimbs(players.me, mov);
+                if(!isFirstPerson) animSteve(players.me, mov);
 
                 if(conn && conn.open) conn.send({type:'sync', x:players.me.position.x, y:players.me.position.y, z:players.me.position.z, ry:r, mov});
             }
@@ -342,10 +354,6 @@
         function toggleFS() {
             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
             else document.exitFullscreen();
-            setTimeout(() => {
-                camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }, 300);
         }
     </script>
 </body>
