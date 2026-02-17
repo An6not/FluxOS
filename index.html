@@ -3,110 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft: Evolution</title>
+    <title>AnnotCraft: Bedrock Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --p-color: #00ff88; --btn-bg: rgba(60, 60, 60, 0.8); }
+        :root { 
+            --mc-bg: #c6c6c6; 
+            --mc-border-light: #ffffff; 
+            --mc-border-dark: #555555;
+            --mc-btn: #7c7c7c;
+        }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
-            background: #000; font-family: 'Segoe UI', sans-serif;
+            background: #000; font-family: 'Courier New', Courier, monospace;
             user-select: none; -webkit-user-select: none; touch-action: none;
         }
-        canvas { display: block; }
 
-        /* Экраны меню */
-        .screen { 
-            position: absolute; inset: 0; z-index: 1000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            background: linear-gradient(45deg, #111, #222); transition: 0.3s;
+        /* Minecraft Style UI */
+        .mc-window {
+            background: var(--mc-bg);
+            border: 4px solid #000;
+            box-shadow: inset 4px 4px var(--mc-border-light), inset -4px -4px var(--mc-border-dark);
+            padding: 20px; text-align: center; width: 320px;
         }
-        .window { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 20px; border: 2px solid var(--p-color); text-align: center; color: #fff; width: 300px; backdrop-filter: blur(10px); }
-        h1 { color: var(--p-color); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px var(--p-color); }
-        
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; font-size: 16px; box-sizing: border-box; outline: none; }
-        button { 
-            width: 100%; padding: 15px; background: var(--btn-bg); border: 1px solid var(--p-color); border-radius: 10px; 
-            font-weight: bold; cursor: pointer; color: #fff; margin-top: 10px; transition: 0.2s;
-            -webkit-tap-highlight-color: transparent;
+        .mc-button {
+            background: var(--mc-btn);
+            border: 2px solid #000;
+            box-shadow: inset 2px 2px var(--mc-border-light), inset -2px -2px var(--mc-border-dark);
+            color: #fff; padding: 12px; margin: 8px 0; width: 100%; cursor: pointer;
+            font-weight: bold; text-shadow: 2px 2px #000; font-size: 16px;
         }
-        button:active { transform: scale(0.95); background: var(--p-color); color: #000; }
-        button.primary { background: var(--p-color); color: #000; border: none; font-size: 18px; }
+        .mc-button:active {
+            box-shadow: inset -2px -2px var(--mc-border-light), inset 2px 2px var(--mc-border-dark);
+            transform: translateY(2px);
+        }
+        .mc-input {
+            background: #000; color: #00ff00; border: 2px solid var(--mc-border-dark);
+            padding: 10px; width: 100%; box-sizing: border-box; margin: 5px 0; font-size: 16px;
+        }
+
+        .screen { position: absolute; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
 
         /* HUD */
-        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; text-shadow: 2px 2px 4px #000; z-index: 100; font-weight: bold; }
-        #fs-btn { position: absolute; top: 20px; right: 20px; z-index: 1100; background: rgba(0,0,0,0.5); color: white; border: 1px solid white; padding: 10px; border-radius: 10px; }
-
-        /* Кнопки управления */
-        #controls-layer { position: absolute; inset: 0; pointer-events: none; z-index: 500; display: none; }
-        #action-btns { position: absolute; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 12px; pointer-events: auto; }
-        .act-btn { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; background: rgba(0,0,0,0.4); }
-        #btn-jump { background: rgba(255,255,255,0.1); margin-bottom: 15px; }
-        #btn-break { border-color: #ff4444; color: #ff4444; }
-        #btn-place { border-color: var(--p-color); color: var(--p-color); }
-
-        #toolbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 12px; border: 1px solid #444; }
-        .slot { width: 45px; height: 45px; border: 2px solid #555; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 10px; }
-        .slot.active { border-color: var(--p-color); background: rgba(0,255,136,0.2); color: #fff; box-shadow: 0 0 10px var(--p-color); }
-
-        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 130px; height: 130px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
-        #joy-stick { position: absolute; top: 40px; left: 40px; width: 50px; height: 50px; background: var(--p-color); border-radius: 50%; opacity: 0.6; pointer-events: none; }
+        #hud-container { position: absolute; top: 10px; left: 10px; z-index: 100; pointer-events: none; color: #fff; text-shadow: 2px 2px #000; font-size: 14px; }
+        #fps-counter { color: #00ff00; font-weight: bold; }
         
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #fs-btn { position: absolute; top: 10px; right: 10px; z-index: 1100; width: 50px; height: 50px; background: rgba(0,0,0,0.5); border: 2px solid #fff; color: #fff; border-radius: 8px; font-size: 10px; }
+
+        /* Controls */
+        #controls-layer { position: absolute; inset: 0; pointer-events: none; display: none; }
+        #action-btns { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .act-btn { 
+            width: 70px; height: 70px; background: rgba(0,0,0,0.5); border: 3px solid var(--mc-border-light); 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold;
+        }
+        #btn-jump { background: rgba(255,255,255,0.2); height: 50px; margin-bottom: 10px; }
+
+        #toolbar { 
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); 
+            display: flex; gap: 5px; pointer-events: auto; background: rgba(0,0,0,0.7); padding: 5px; border: 3px solid #333;
+        }
+        .slot { width: 45px; height: 45px; border: 2px solid #555; position: relative; display: flex; align-items: center; justify-content: center; }
+        .slot.active { border-color: #fff; box-shadow: 0 0 10px #fff; }
+        .slot-img { width: 80%; height: 80%; }
+
+        #joy-base { position: absolute; bottom: 40px; left: 40px; width: 140px; height: 140px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #fff; pointer-events: auto; }
+        #joy-stick { position: absolute; top: 45px; left: 45px; width: 50px; height: 50px; background: #fff; border-radius: 50%; opacity: 0.5; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 24px; height: 24px; border: 2px solid #fff; transform: translate(-50%, -50%); pointer-events: none; opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <button id="fs-btn" onclick="toggleFS()">FULLSCREEN</button>
-    <div id="hud">AnnotCraft v3.5</div>
+    <button id="fs-btn" onclick="toggleFS()">FULL</button>
+    <div id="hud-container">
+        FPS: <span id="fps-counter">60</span><br>
+        AnnotCraft v3.8
+    </div>
     <div id="crosshair" style="display:none"></div>
 
     <div id="menu-main" class="screen">
-        <div class="window">
-            <h1>AnnotCraft</h1>
-            <button class="primary" onclick="showScreen('single')">Одиночная игра</button>
-            <button onclick="showScreen('multi')">Мультиплеер</button>
+        <div class="mc-window">
+            <h2 style="margin-top:0; text-shadow: 2px 2px #555;">ANNOT CRAFT</h2>
+            <button class="mc-button" onclick="showScreen('single')">ОДИНОЧНЫЙ МИР</button>
+            <button class="mc-button" onclick="showScreen('multi')">СЕТЕВАЯ ИГРА</button>
         </div>
     </div>
 
     <div id="menu-multi" class="screen" style="display:none">
-        <div class="window">
-            <h1>Мультиплеер</h1>
-            <input type="text" id="nick-in" placeholder="Твой ник" value="Annot">
-            <input type="text" id="srv-in" placeholder="Название комнаты">
-            <input type="password" id="pass-in" placeholder="Пароль хоста">
-            <button class="primary" onclick="initApp('host')">Создать сервер</button>
-            <button onclick="initApp('join')">Войти к другу</button>
-            <button onclick="showScreen('main')" style="border-color:#777; font-size:12px;">Назад</button>
+        <div class="mc-window">
+            <h2 style="margin-top:0;">СЕТЬ</h2>
+            <input type="text" id="nick-in" class="mc-input" placeholder="Ник" value="Annot">
+            <input type="text" id="srv-in" class="mc-input" placeholder="Имя сервера">
+            <button class="mc-button" onclick="initApp('host')">СОЗДАТЬ СЕРВЕР</button>
+            <button class="mc-button" onclick="initApp('join')">ПОДКЛЮЧИТЬСЯ</button>
+            <button class="mc-button" onclick="showScreen('main')" style="font-size:12px;">НАЗАД</button>
         </div>
     </div>
 
     <div id="controls-layer">
         <div id="toolbar">
-            <div class="slot active" id="s0" onclick="selBlock('DIRT', 0)">DIRT</div>
-            <div class="slot" id="s1" onclick="selBlock('WOOD', 1)">WOOD</div>
-            <div class="slot" id="s2" onclick="selBlock('STONE', 2)">STONE</div>
+            <div class="slot active" id="s0" onclick="selBlock('DIRT', 0)"><div class="slot-img" style="background:#8b4513"></div></div>
+            <div class="slot" id="s1" onclick="selBlock('WOOD', 1)"><div class="slot-img" style="background:#6d4c41"></div></div>
+            <div class="slot" id="s2" onclick="selBlock('STONE', 2)"><div class="slot-img" style="background:#808080"></div></div>
+            <div class="slot" id="s3" onclick="selBlock('LEAVES', 3)"><div class="slot-img" style="background:#2e7d32"></div></div>
         </div>
 
         <div id="action-btns">
-            <div class="act-btn" id="btn-jump">JUMP</div>
-            <div class="act-btn" id="btn-break">BREAK</div>
-            <div class="act-btn" id="btn-place">PLACE</div>
+            <div class="act-btn" id="btn-jump">ПРЫЖОК</div>
+            <div class="act-btn" id="btn-break" style="color:#ff4444">УДАЛИТЬ</div>
+            <div class="act-btn" id="btn-place" style="color:#00ff00">СОЗДАТЬ</div>
         </div>
 
         <div id="joy-base"><div id="joy-stick"></div></div>
     </div>
 
     <script>
-        /** --- ТЕКСТУРЫ --- **/
-        function createTex(c1, c2) {
+        /** --- ГЕНЕРАТОР ТЕКСТУР (УНИКАЛЬНЫЕ ПАТТЕРНЫ) --- **/
+        function createMcTex(type) {
             const canvas = document.createElement('canvas');
             canvas.width = 16; canvas.height = 16;
             const ctx = canvas.getContext('2d');
+            
+            const drawPixel = (x, y, color) => { ctx.fillStyle = color; ctx.fillRect(x, y, 1, 1); };
+
             for(let x=0; x<16; x++) {
                 for(let y=0; y<16; y++) {
-                    ctx.fillStyle = Math.random() > 0.5 ? c1 : c2;
-                    ctx.fillRect(x, y, 1, 1);
+                    let rand = Math.random();
+                    if(type === 'dirt') drawPixel(x, y, rand > 0.1 ? '#8b4513' : '#6d350f');
+                    if(type === 'stone') drawPixel(x, y, rand > 0.2 ? '#808080' : '#666666');
+                    if(type === 'grass_top') drawPixel(x, y, rand > 0.3 ? '#5a9a44' : '#4e8a3a');
+                    if(type === 'wood_side') drawPixel(x, y, (x % 4 === 0) ? '#5d3f35' : '#6d4c41');
+                    if(type === 'wood_top') drawPixel(x, y, Math.sqrt((x-8)**2+(y-8)**2) % 3 < 1 ? '#8d6e63' : '#a1887f');
+                    if(type === 'leaves') drawPixel(x, y, rand > 0.4 ? '#2e7d32' : '#1b5e20');
                 }
             }
             const tex = new THREE.CanvasTexture(canvas);
@@ -114,28 +142,39 @@
             return tex;
         }
 
-        const MATS = {
-            GRASS: new THREE.MeshLambertMaterial({ map: createTex('#5a9a44', '#4e8a3a') }),
-            DIRT: new THREE.MeshLambertMaterial({ map: createTex('#8b4513', '#6d350f') }),
-            WOOD: new THREE.MeshLambertMaterial({ map: createTex('#6d4c41', '#5d3f35') }),
-            STONE: new THREE.MeshLambertMaterial({ map: createTex('#808080', '#707070') })
+        const MATERIALS = {
+            DIRT: new THREE.MeshLambertMaterial({ map: createMcTex('dirt') }),
+            STONE: new THREE.MeshLambertMaterial({ map: createMcTex('stone') }),
+            LEAVES: new THREE.MeshLambertMaterial({ map: createMcTex('leaves'), transparent: true, opacity: 0.9 }),
+            WOOD: [
+                new THREE.MeshLambertMaterial({ map: createMcTex('wood_side') }), // sides
+                new THREE.MeshLambertMaterial({ map: createMcTex('wood_side') }),
+                new THREE.MeshLambertMaterial({ map: createMcTex('wood_top') }),  // top
+                new THREE.MeshLambertMaterial({ map: createMcTex('wood_top') }),  // bottom
+                new THREE.MeshLambertMaterial({ map: createMcTex('wood_side') }),
+                new THREE.MeshLambertMaterial({ map: createMcTex('wood_side') })
+            ],
+            GRASS: [
+                new THREE.MeshLambertMaterial({ map: createMcTex('dirt') }), // sides
+                new THREE.MeshLambertMaterial({ map: createMcTex('dirt') }),
+                new THREE.MeshLambertMaterial({ map: createMcTex('grass_top') }), // top
+                new THREE.MeshLambertMaterial({ map: createMcTex('dirt') }),
+                new THREE.MeshLambertMaterial({ map: createMcTex('dirt') }),
+                new THREE.MeshLambertMaterial({ map: createMcTex('dirt') })
+            ]
         };
 
-        /** --- ГЛОБАЛЫ --- **/
-        let scene, camera, renderer, peer, conn, myNick, isHost = false, gameMode = 'none';
+        /** --- ЛОГИКА ИГРЫ --- **/
+        let scene, camera, renderer, peer, conn, isHost = false, gMode = 'none';
         let players = {}, worldBlocks = new Map();
         let moveDir = { x: 0, z: 0 }, selMat = 'DIRT', vY = 0, isGrounded = false;
-        let joyId = null, camId = null, lx, ly;
+        let joyId = null, camId = null, lx, ly, fpsEl, lastFTime = 0;
 
-        function showScreen(type) {
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            if(type === 'main') document.getElementById('menu-main').style.display = 'flex';
-            if(type === 'multi') document.getElementById('menu-multi').style.display = 'flex';
-            if(type === 'single') {
-                gameMode = 'single';
-                document.getElementById('menu-main').style.display = 'none';
-                startWorld();
-            }
+        function showScreen(s) {
+            document.querySelectorAll('.screen').forEach(el => el.style.display = 'none');
+            if(s === 'main') document.getElementById('menu-main').style.display = 'flex';
+            if(s === 'multi') document.getElementById('menu-multi').style.display = 'flex';
+            if(s === 'single') { gMode = 'single'; startWorld(); }
         }
 
         function selBlock(m, i) {
@@ -144,141 +183,99 @@
             document.getElementById('s'+i).classList.add('active');
         }
 
-        /** --- СЕТЬ --- **/
         function initApp(mode) {
-            myNick = document.getElementById('nick-in').value || "Guest";
             let srv = document.getElementById('srv-in').value.trim().toLowerCase();
-            if(!srv) return alert("Введите имя комнаты");
-            
-            gameMode = 'multi';
-            isHost = (mode === 'host');
-            peer = isHost ? new Peer("annot_v3_" + srv) : new Peer();
-            
+            if(!srv) return alert("Введите имя!");
+            gMode = 'multi'; isHost = (mode === 'host');
+            peer = isHost ? new Peer("annot_v4_" + srv) : new Peer();
             peer.on('open', () => {
-                if(isHost) {
-                    document.getElementById('hud').innerText = "Сервер: " + srv + " | Ждем игрока...";
-                    peer.on('connection', c => { conn = c; setupNet(); });
-                } else {
-                    conn = peer.connect("annot_v3_" + srv);
-                    setupNet();
-                }
-            });
-            peer.on('error', () => alert("Ошибка! Название занято или сервер не найден."));
-        }
-
-        function setupNet() {
-            conn.on('open', () => startWorld());
-            conn.on('data', d => {
-                if(d.type==='sync') syncFriend(d);
-                if(d.type==='place') doPlace(d.pos, d.mat, false);
-                if(d.type==='break') doBreak(d.pos, false);
+                if(isHost) peer.on('connection', c => { conn = c; setupNet(); });
+                else { conn = peer.connect("annot_v4_" + srv); setupNet(); }
             });
         }
 
-        /** --- МОДЕЛЬ --- **/
-        function createSteve(color) {
-            const g = new THREE.Group();
-            const skin = new THREE.MeshLambertMaterial({color});
-            const clothes = new THREE.MeshLambertMaterial({color: 0x00aaff});
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skin);
-            head.position.y = 1.6;
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.25), clothes);
-            body.position.y = 1.05;
-            const limbGeo = new THREE.BoxGeometry(0.2, 0.7, 0.2);
-            const aL = new THREE.Mesh(limbGeo, skin); aL.position.set(-0.35, 1.05, 0);
-            const aR = new THREE.Mesh(limbGeo, skin); aR.position.set(0.35, 1.05, 0);
-            const lL = new THREE.Mesh(limbGeo, new THREE.MeshLambertMaterial({color: 0x000088})); lL.position.set(-0.15, 0.35, 0);
-            const lR = lL.clone(); lR.position.x = 0.15;
-            g.add(head, body, aL, aR, lL, lR);
-            g.limbs = { aL, aR, lL, lR };
-            return g;
+        function setupNet() { conn.on('open', () => startWorld()); conn.on('data', d => handleNetData(d)); }
+
+        function handleNetData(d) {
+            if(d.type==='sync') syncFriend(d);
+            if(d.type==='place') doPlace(d.pos, d.mat, false);
+            if(d.type==='break') doBreak(d.pos, false);
         }
 
-        /** --- МИР --- **/
+        /** --- ДВИЖОК --- **/
         function startWorld() {
-            document.getElementById('menu-multi').style.display = 'none';
-            document.getElementById('menu-main').style.display = 'none';
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
             document.getElementById('controls-layer').style.display = 'block';
             document.getElementById('crosshair').style.display = 'block';
+            fpsEl = document.getElementById('fps-counter');
 
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87ceeb);
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: false }); // Для стиля
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-            sun.position.set(10, 20, 10);
-            scene.add(sun);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+            sun.position.set(10, 20, 10); scene.add(sun);
 
-            const box = new THREE.BoxGeometry(1, 1, 1);
-            for(let x=-20; x<=20; x++) {
-                for(let z=-20; z<=20; z++) {
-                    const b = new THREE.Mesh(box, MATS.GRASS);
-                    b.position.set(x, 0, z);
-                    scene.add(b);
+            // Пол
+            const geo = new THREE.BoxGeometry(1, 1, 1);
+            for(let x=-15; x<=15; x++) {
+                for(let z=-15; z<=15; z++) {
+                    const b = new THREE.Mesh(geo, MATERIALS.GRASS);
+                    b.position.set(x, 0, z); scene.add(b);
                     worldBlocks.set(`${x},0,${z}`, b);
                 }
             }
 
-            players.me = createSteve(isHost ? 0x00ff88 : 0xffccaa);
+            players.me = new THREE.Group(); 
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), new THREE.MeshLambertMaterial({color: 0xffccaa}));
+            head.position.y = 1.6; players.me.add(head);
             scene.add(players.me);
-            camera.position.set(0, 1.6, 0);
-            players.me.add(camera);
+            camera.position.set(0, 1.6, 0); players.me.add(camera);
 
             setupControls();
-            animate();
+            requestAnimationFrame(renderLoop);
         }
 
-        function checkCol(p) {
-            const x = Math.round(p.x), y = Math.round(p.y), z = Math.round(p.z);
+        function checkCollision(p) {
+            const x = Math.round(p.x), y = Math.floor(p.y), z = Math.round(p.z);
+            // Проверка ног и головы
             return worldBlocks.has(`${x},${y},${z}`) || worldBlocks.has(`${x},${y+1},${z}`);
         }
 
         function doPlace(p, m, s) {
             const k = `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}`;
             if(worldBlocks.has(k)) return;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), MATS[m]);
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), MATERIALS[m]);
             b.position.set(Math.round(p.x), Math.round(p.y), Math.round(p.z));
-            scene.add(b);
-            worldBlocks.set(k, b);
+            scene.add(b); worldBlocks.set(k, b);
             if(s && conn) conn.send({type:'place', pos: b.position, mat: m});
         }
 
         function doBreak(p, s) {
             const k = `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}`;
             if(worldBlocks.has(k) && Math.round(p.y) !== 0) {
-                scene.remove(worldBlocks.get(k));
-                worldBlocks.delete(k);
+                scene.remove(worldBlocks.get(k)); worldBlocks.delete(k);
                 if(s && conn) conn.send({type:'break', pos: p});
             }
         }
 
         function syncFriend(d) {
-            if(!players.friend) { players.friend = createSteve(isHost?0xffccaa:0x00ff88); scene.add(players.friend); }
-            players.friend.position.lerp(new THREE.Vector3(d.x, d.y, d.z), 0.3);
-            players.friend.rotation.y = d.ry;
-            animSteve(players.friend, d.mov);
-        }
-
-        function animSteve(p, mov) {
-            const t = Date.now() * 0.01;
-            if(mov) {
-                p.limbs.aL.rotation.x = Math.sin(t) * 0.5; p.limbs.aR.rotation.x = -Math.sin(t) * 0.5;
-                p.limbs.lL.rotation.x = -Math.sin(t) * 0.5; p.limbs.lR.rotation.x = Math.sin(t) * 0.5;
-            } else {
-                p.limbs.aL.rotation.x = p.limbs.aR.rotation.x = 0;
-                p.limbs.lL.rotation.x = p.limbs.lR.rotation.x = 0;
+            if(!players.f) { 
+                players.f = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.8, 0.5), new THREE.MeshLambertMaterial({color:0x00ff00}));
+                scene.add(players.f);
             }
+            players.f.position.lerp(new THREE.Vector3(d.x, d.y, d.z), 0.2);
+            players.f.rotation.y = d.ry;
         }
 
         /** --- УПРАВЛЕНИЕ --- **/
         function setupControls() {
             const ray = new THREE.Raycaster();
-            document.getElementById('btn-jump').onpointerdown = (e) => { e.stopPropagation(); if(isGrounded) vY = 0.25; };
+            document.getElementById('btn-jump').onpointerdown = (e) => { e.stopPropagation(); if(isGrounded) vY = 0.22; };
             document.getElementById('btn-place').onpointerdown = (e) => { e.stopPropagation(); act(true); };
             document.getElementById('btn-break').onpointerdown = (e) => { e.stopPropagation(); act(false); };
 
@@ -303,9 +300,9 @@
                 for(let t of e.changedTouches) {
                     if(t.identifier === joyId) {
                         const b = document.getElementById('joy-base').getBoundingClientRect();
-                        const dx = t.clientX - (b.left + 65), dy = t.clientY - (b.top + 65);
-                        const dist = Math.min(45, Math.sqrt(dx*dx + dy*dy)), ang = Math.atan2(dy, dx);
-                        moveDir = { x: Math.cos(ang)*(dist/45)*0.12, z: Math.sin(ang)*(dist/45)*0.12 };
+                        const dx = t.clientX - (b.left + 70), dy = t.clientY - (b.top + 70);
+                        const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy)), ang = Math.atan2(dy, dx);
+                        moveDir = { x: Math.cos(ang)*(dist/50)*0.13, z: Math.sin(ang)*(dist/50)*0.13 };
                         document.getElementById('joy-stick').style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px)`;
                     } else if(t.identifier === camId) {
                         players.me.rotation.y -= (t.clientX - lx) * 0.007;
@@ -313,7 +310,7 @@
                         lx = t.clientX; ly = t.clientY;
                     }
                 }
-            });
+            }, {passive: false});
 
             window.addEventListener('touchend', e => {
                 for(let t of e.changedTouches) {
@@ -323,42 +320,54 @@
             });
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
+        function renderLoop(time) {
+            requestAnimationFrame(renderLoop);
+            
+            // FPS
+            if(time - lastFTime > 500) { fpsEl.innerText = Math.round(1000 / (time - lastFTime) * 30); lastFTime = time; }
+
             if(players.me) {
-                vY -= 0.015; players.me.position.y += vY;
-                if(players.me.position.y < 1) { players.me.position.y = 1; vY = 0; isGrounded = true; } 
-                else isGrounded = false;
+                // Гравитация
+                vY -= 0.012; 
+                let nextY = players.me.position.y + vY;
+                
+                if(checkCollision({x: players.me.position.x, y: nextY - 0.5, z: players.me.position.z})) {
+                    if(vY < 0) { vY = 0; isGrounded = true; }
+                } else {
+                    players.me.position.y = nextY;
+                    isGrounded = false;
+                }
 
                 const r = players.me.rotation.y;
                 const nX = moveDir.x * Math.cos(r) + moveDir.z * Math.sin(r);
                 const nZ = moveDir.z * Math.cos(r) - moveDir.x * Math.sin(r);
                 
-                if(!checkCol({x: players.me.position.x + nX, y: players.me.position.y, z: players.me.position.z + nZ})) {
+                if(!checkCollision({x: players.me.position.x + nX, y: players.me.position.y, z: players.me.position.z + nZ})) {
                     players.me.position.x += nX; players.me.position.z += nZ;
                 }
 
-                const mov = Math.abs(moveDir.x) > 0.01 || Math.abs(moveDir.z) > 0.01;
-                animSteve(players.me, mov);
-
-                if(gameMode === 'multi' && conn && conn.open) {
-                    conn.send({type:'sync', x:players.me.position.x, y:players.me.position.y, z:players.me.position.z, ry:r, mov});
+                if(gMode === 'multi' && conn && conn.open) {
+                    conn.send({type:'sync', x:players.me.position.x, y:players.me.position.y, z:players.me.position.z, ry:r});
                 }
             }
             renderer.render(scene, camera);
         }
 
         function toggleFS() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
-        }
+            const doc = window.document;
+            const docEl = doc.documentElement;
+            const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
 
-        window.addEventListener('resize', () => {
-            if(!renderer) return;
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+            if(!doc.fullscreenElement) requestFullScreen.call(docEl);
+            else cancelFullScreen.call(doc);
+            
+            setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 300);
+        }
     </script>
 </body>
 </html>
