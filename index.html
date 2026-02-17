@@ -3,66 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft: Ultimate v9</title>
+    <title>AnnotCraft v10: Stable</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --mc-bg: #c6c6c6; --mc-btn: #7c7c7c; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: monospace; user-select: none; -webkit-user-select: none; }
+        :root { --mc-btn: #7c7c7c; --mc-border: #000; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
+            background: #87ceeb; /* Цвет неба как подложка */
+            font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; touch-action: none;
+        }
 
-        /* UI Styles */
-        .screen { position: absolute; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); }
+        /* Кнопка Fullscreen (Всегда видна) */
+        #fs-btn {
+            position: absolute; top: 10px; right: 10px; z-index: 3000;
+            width: 40px; height: 40px; background: rgba(0,0,0,0.5); border: 2px solid #fff;
+            color: #fff; font-size: 24px; line-height: 36px; text-align: center; cursor: pointer;
+        }
+
+        /* Меню */
+        .screen { position: absolute; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); }
         .panel { 
-            background: url('https://piskel-imgstore-b.appspot.com/img/84180d32-942c-11e8-8a8b-15f530e9f1a2.png'); 
-            background-size: 64px; image-rendering: pixelated;
-            padding: 20px; border: 4px solid #fff; width: 300px; text-align: center; 
-            box-shadow: 0 0 20px #000;
+            background: #c6c6c6; border: 4px solid #000; padding: 20px; width: 300px; text-align: center; 
+            box-shadow: inset 4px 4px #fff, inset -4px -4px #555;
         }
         .btn {
-            background: #555; border: 2px solid #000; color: #fff; 
-            padding: 15px; margin: 5px 0; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: inset 2px 2px #aaa, inset -2px -2px #222; text-shadow: 2px 2px #000;
+            background: #7c7c7c; border: 2px solid #000; color: #fff; 
+            padding: 12px; margin: 8px 0; width: 100%; font-weight: bold; font-size: 16px;
+            box-shadow: inset 2px 2px #fff, inset -2px -2px #444; text-shadow: 2px 2px #000; cursor: pointer;
         }
-        .btn:active { box-shadow: inset -2px -2px #aaa, inset 2px 2px #222; transform: translateY(2px); }
+        .btn:active { box-shadow: inset -2px -2px #fff, inset 2px 2px #444; border-color: #444; }
 
-        /* HUD */
-        #ui { position: absolute; inset: 0; pointer-events: none; display: none; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.8); transform: translate(-50%, -50%); }
+        /* Игровой Интерфейс (HUD) */
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 1000; }
+        #crosshair { 
+            position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; 
+            border: 2px solid rgba(255,255,255,0.8); transform: translate(-50%, -50%); 
+        }
         
-        #toolbar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(0,0,0,0.6); padding: 4px; border: 2px solid #fff; pointer-events: auto; }
-        .slot { width: 40px; height: 40px; border: 2px solid #555; position: relative; }
-        .slot.active { border-color: #fff; box-shadow: 0 0 5px #fff; }
-        .slot-img { width: 100%; height: 100%; image-rendering: pixelated; }
+        /* Инвентарь */
+        #toolbar { 
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); 
+            display: flex; gap: 4px; background: rgba(0,0,0,0.5); padding: 5px; border: 2px solid #fff; pointer-events: auto; 
+        }
+        .slot { width: 42px; height: 42px; border: 2px solid #555; background: rgba(0,0,0,0.3); position: relative; }
+        .slot.active { border-color: #fff; background: rgba(255,255,255,0.2); transform: scale(1.1); }
+        .slot canvas { width: 100%; height: 100%; image-rendering: pixelated; }
 
-        #controls { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
-        .act-btn { width: 70px; height: 70px; background: rgba(0,0,0,0.3); border: 2px solid #fff; border-radius: 10px; color: #fff; font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center; }
-        
+        /* Управление */
+        #controls { position: absolute; bottom: 60px; right: 20px; display: flex; flex-direction: column; gap: 15px; pointer-events: auto; }
+        .act-btn { 
+            width: 70px; height: 70px; background: rgba(0,0,0,0.3); border: 3px solid #fff; border-radius: 12px; 
+            color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; 
+            font-size: 14px; text-shadow: 1px 1px #000;
+        }
+        .act-btn:active { background: rgba(255,255,255,0.3); }
+
         #joy-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; pointer-events: auto; }
-        #joy-base { width: 100%; height: 100%; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; position: relative; }
-        #joy-stick { width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; position: absolute; top: 35px; left: 35px; }
+        #joy-base { width: 100%; height: 100%; border: 3px solid rgba(255,255,255,0.4); border-radius: 50%; position: relative; }
+        #joy-stick { width: 50px; height: 50px; background: rgba(255,255,255,0.7); border-radius: 50%; position: absolute; top: 35px; left: 35px; }
 
-        /* Top Bar */
-        #top-ui { position: absolute; top: 10px; right: 10px; pointer-events: auto; display: flex; gap: 5px; }
-        .mini-btn { padding: 5px 10px; background: #333; color: #fff; border: 1px solid #fff; font-size: 10px; }
+        /* Индикатор режима */
+        #mode-ind { position: absolute; top: 10px; left: 10px; color: #fff; font-weight: bold; text-shadow: 1px 1px #000; }
     </style>
 </head>
 <body>
 
+    <div id="fs-btn" onclick="toggleFS()">[ ]</div>
+
     <div id="m-main" class="screen">
         <div class="panel">
-            <h1 style="color:#fff; text-shadow: 3px 3px #000; margin-top:0;">MINECRAFT JS</h1>
-            <button class="btn" onclick="run('single')">ОДИНОЧНАЯ</button>
-            <button class="btn" onclick="openMenu('multi')">СЕТЕВАЯ</button>
+            <h1 style="margin-top:0; text-shadow: 2px 2px #fff;">MINECRAFT JS</h1>
+            <button class="btn" onclick="startGame('single')">ИГРАТЬ</button>
+            <button class="btn" onclick="openMenu('multi')">СЕТЬ</button>
             <button class="btn" onclick="openMenu('opts')">НАСТРОЙКИ</button>
         </div>
     </div>
 
     <div id="m-multi" class="screen" style="display:none">
         <div class="panel">
-            <h2>СЕРВЕР</h2>
-            <input id="srv-id" type="text" placeholder="ID Комнаты" style="width:90%; padding:10px; margin-bottom:10px; background:#222; color:#fff; border:1px solid #fff;">
-            <button class="btn" onclick="run('host')">СОЗДАТЬ</button>
-            <button class="btn" onclick="run('join')">ВОЙТИ</button>
+            <h2>МУЛЬТИПЛЕЕР</h2>
+            <input id="srv-id" type="text" placeholder="ID Комнаты" style="width:90%; padding:10px; margin-bottom:10px; border:2px solid #000;">
+            <button class="btn" onclick="startGame('host')">СОЗДАТЬ</button>
+            <button class="btn" onclick="startGame('join')">ВОЙТИ</button>
             <button class="btn" onclick="openMenu('main')">НАЗАД</button>
         </div>
     </div>
@@ -71,70 +94,64 @@
         <div class="panel">
             <h2>НАСТРОЙКИ</h2>
             <button class="btn" onclick="toggleView()">ВИД: <span id="v-txt">1 ЛИЦО</span></button>
-            <button class="btn" onclick="toggleFS()">ПОЛНЫЙ ЭКРАН</button>
             <button class="btn" onclick="openMenu('main')">НАЗАД</button>
         </div>
     </div>
 
-    <div id="ui">
-        <div id="top-ui">
-            <button class="mini-btn" onclick="openMenu('main')">MENU</button>
-            <button class="mini-btn" onclick="toggleView()">CAM</button>
-        </div>
+    <div id="ui-layer">
+        <div id="mode-ind">AnnotCraft v10</div>
         <div id="crosshair"></div>
         
         <div id="toolbar">
-            <div class="slot active" onclick="setSlot(0)"><canvas id="ic0" class="slot-img"></canvas></div> <div class="slot" onclick="setSlot(1)"><canvas id="ic1" class="slot-img"></canvas></div> <div class="slot" onclick="setSlot(2)"><canvas id="ic2" class="slot-img"></canvas></div> <div class="slot" onclick="setSlot(3)"><canvas id="ic3" class="slot-img"></canvas></div> <div class="slot" onclick="setSlot(4)"><canvas id="ic4" class="slot-img"></canvas></div> </div>
+            <div class="slot active" onclick="setSlot(0)"><canvas width="32" height="32" id="ic0"></canvas></div> <div class="slot" onclick="setSlot(1)"><canvas width="32" height="32" id="ic1"></canvas></div> <div class="slot" onclick="setSlot(2)"><canvas width="32" height="32" id="ic2"></canvas></div> <div class="slot" onclick="setSlot(3)"><canvas width="32" height="32" id="ic3"></canvas></div> <div class="slot" onclick="setSlot(4)"><canvas width="32" height="32" id="ic4"></canvas></div> </div>
 
         <div id="controls">
             <div class="act-btn" id="b-jump">JUMP</div>
-            <div class="act-btn" id="b-break" style="background:rgba(255,0,0,0.2)">BREAK</div>
-            <div class="act-btn" id="b-place" style="background:rgba(0,255,0,0.2)">PLACE</div>
+            <div class="act-btn" id="b-break" style="color:#ff6666; border-color:#ff6666">BREAK</div>
+            <div class="act-btn" id="b-place" style="color:#66ff66; border-color:#66ff66">PLACE</div>
         </div>
 
         <div id="joy-zone"><div id="joy-base"><div id="joy-stick"></div></div></div>
     </div>
 
     <script>
-        /** --- TEXTURE ENGINE (High Quality) --- **/
-        function genTex(type) {
-            const cvs = document.createElement('canvas'); 
-            cvs.width = 64; cvs.height = 64; // Higher res for details
+        /** --- 1. ГЕНЕРАТОР ТЕКСТУР (ПРОДВИНУТЫЙ) --- **/
+        function createTex(type) {
+            const cvs = document.createElement('canvas'); cvs.width = 64; cvs.height = 64;
             const ctx = cvs.getContext('2d');
             
-            // Helpers
-            const fill = (c) => { ctx.fillStyle = c; ctx.fillRect(0,0,64,64); };
-            const noise = (c, d) => {
-                for(let i=0; i<400; i++) {
-                    ctx.fillStyle = Math.random()>0.5 ? c : d;
+            // Базовые функции рисования
+            const fill = c => { ctx.fillStyle=c; ctx.fillRect(0,0,64,64); };
+            const noise = (c1, c2, n=300) => {
+                for(let i=0; i<n; i++) {
+                    ctx.fillStyle = Math.random()>0.5 ? c1 : c2;
                     ctx.fillRect(Math.random()*64, Math.random()*64, 4, 4);
                 }
             };
 
-            if(type === 'dirt') { fill('#5d4037'); noise('#4e342e', '#795548'); }
-            else if(type === 'stone') { fill('#757575'); noise('#616161', '#9e9e9e'); }
-            else if(type === 'grass_top') { fill('#4caf50'); noise('#388e3c', '#81c784'); }
+            if(type === 'grass_top') { fill('#5ba848'); noise('#469138', '#6cbd57'); }
             else if(type === 'grass_side') {
-                fill('#5d4037'); noise('#4e342e', '#795548'); // Dirt base
-                ctx.fillStyle = '#4caf50'; ctx.fillRect(0,0,64,12); // Green top
-                for(let i=0; i<16; i++) ctx.fillRect(i*4, 12, 4, Math.random()*10); // Drips
+                fill('#795548'); noise('#5d4037', '#8d6e63', 100); // Земля
+                ctx.fillStyle = '#5ba848'; ctx.fillRect(0,0,64,16); // Верх травы
+                for(let i=0; i<16; i++) ctx.fillRect(i*4, 16, 4, Math.random()*12); // Подтеки
             }
+            else if(type === 'dirt') { fill('#795548'); noise('#5d4037', '#8d6e63'); }
+            else if(type === 'stone') { fill('#808080'); noise('#686868', '#909090'); }
             else if(type === 'wood_side') {
-                fill('#5d4037'); 
-                ctx.fillStyle = '#3e2723';
-                for(let i=0; i<64; i+=8) ctx.fillRect(i, 0, 4, 64); // Bark lines
+                fill('#6d4c41'); 
+                ctx.fillStyle='#4e342e'; for(let i=2; i<64; i+=6) ctx.fillRect(i,0,2,64); // Кора
             }
             else if(type === 'wood_top') {
-                fill('#8d6e63'); 
-                ctx.fillStyle = '#6d4c41';
-                ctx.beginPath(); ctx.arc(32,32,25,0,7); ctx.stroke();
-                ctx.beginPath(); ctx.arc(32,32,15,0,7); ctx.stroke(); // Rings
+                fill('#8d6e63'); ctx.fillStyle='#5d4037';
+                ctx.beginPath(); ctx.arc(32,32,24,0,7); ctx.stroke();
+                ctx.beginPath(); ctx.arc(32,32,12,0,7); ctx.stroke();
             }
-            else if(type === 'leaves') { fill('#2e7d32'); noise('#1b5e20', '#66bb6a'); }
-            else if(type === 'oven_front') {
-                fill('#757575'); noise('#616161', '#9e9e9e');
-                ctx.fillStyle = '#000'; ctx.fillRect(10,10,44,20); // Top hole
-                ctx.fillStyle = '#d84315'; ctx.fillRect(14,40,36,14); // Fire
+            else if(type === 'leaves') { fill('#388e3c'); noise('#1b5e20', '#4caf50', 500); }
+            else if(type === 'oven') {
+                fill('#808080'); noise('#555', '#999');
+                ctx.fillStyle='#000'; ctx.fillRect(12,12,40,20); // Слот
+                ctx.fillStyle='#d84315'; ctx.fillRect(16,42,32,10); // Огонь
+                ctx.fillStyle='#ffab91'; ctx.fillRect(20,44,8,6);
             }
 
             const t = new THREE.CanvasTexture(cvs);
@@ -142,236 +159,240 @@
             return t;
         }
 
-        const TEX = {
-            dirt: genTex('dirt'),
-            stone: genTex('stone'),
-            gTop: genTex('grass_top'),
-            gSide: genTex('grass_side'),
-            wSide: genTex('wood_side'),
-            wTop: genTex('wood_top'),
-            leaves: genTex('leaves'),
-            oven: genTex('oven_front')
+        // Кэширование текстур
+        const T = {
+            gt: createTex('grass_top'), gs: createTex('grass_side'), d: createTex('dirt'),
+            s: createTex('stone'), wt: createTex('wood_top'), ws: createTex('wood_side'),
+            l: createTex('leaves'), o: createTex('oven')
         };
 
-        // Multi-sided Materials
+        // Генерация материалов
         function getMat(id) {
-            const m = (t) => new THREE.MeshLambertMaterial({ map: t });
-            if(id === 0) return [m(TEX.gSide), m(TEX.gSide), m(TEX.gTop), m(TEX.dirt), m(TEX.gSide), m(TEX.gSide)]; // Grass
-            if(id === 1) return m(TEX.stone); // Stone
-            if(id === 2) return [m(TEX.wSide), m(TEX.wSide), m(TEX.wTop), m(TEX.wTop), m(TEX.wSide), m(TEX.wSide)]; // Wood
-            if(id === 3) return new THREE.MeshLambertMaterial({ map: TEX.leaves, transparent:true, opacity:0.9 }); // Leaves
-            if(id === 4) return [m(TEX.stone), m(TEX.stone), m(TEX.stone), m(TEX.stone), m(TEX.oven), m(TEX.stone)]; // Oven
+            const m = t => new THREE.MeshLambertMaterial({map: t});
+            if(id===0) return [m(T.gs), m(T.gs), m(T.gt), m(T.d), m(T.gs), m(T.gs)]; // Трава
+            if(id===1) return m(T.s); // Камень
+            if(id===2) return [m(T.ws), m(T.ws), m(T.wt), m(T.wt), m(T.ws), m(T.ws)]; // Дерево
+            if(id===3) return new THREE.MeshLambertMaterial({map: T.l, transparent:true, opacity:0.9}); // Листва
+            if(id===4) return [m(T.s), m(T.s), m(T.s), m(T.s), m(T.o), m(T.s)]; // Печка
         }
-        
-        // Icon generation for UI
-        function drawIcon(id, cvsId) {
-            const ctx = document.getElementById(cvsId).getContext('2d');
-            const tex = id===0?TEX.gSide : id===1?TEX.stone : id===2?TEX.wSide : id===3?TEX.leaves : TEX.oven;
-            ctx.drawImage(tex.image, 0, 0, 300, 150);
-        }
-        setTimeout(() => { for(let i=0; i<5; i++) drawIcon(i, 'ic'+i); }, 500);
 
-        /** --- CORE ENGINE --- **/
+        // Отрисовка иконок инвентаря
+        window.onload = () => {
+            ['grass_side','stone','wood_side','leaves','oven'].forEach((t, i) => {
+                const ctx = document.getElementById('ic'+i).getContext('2d');
+                ctx.drawImage(i===4?T.o.image:i===0?T.gs.image:i===1?T.s.image:i===2?T.ws.image:T.l.image, 0,0,32,32);
+            });
+            init3D(); // СРАЗУ ГРУЗИМ МИР
+        };
+
+        /** --- 2. ЯДРО ДВИЖКА --- **/
         let scene, camera, renderer, sun, sky;
         let world = new Map(), players = {}, hand;
-        let myPos = new THREE.Vector3(0,5,0), myRot = 0, vY = 0;
-        let isFP = true, slot = 0, isGame = false;
+        let isGame = false, isFP = true, slot = 0;
+        let myPos = {x:0, y:8, z:0}, vY = 0, myRot = 0; // Начинаем высоко
         let joyId, camId, lx, ly, mov = {x:0, z:0};
         let peer, conn;
 
-        function openMenu(id) { document.querySelectorAll('.screen').forEach(e=>e.style.display='none'); document.getElementById('m-'+id).style.display='flex'; }
-        function setSlot(i) { slot = i; document.querySelectorAll('.slot').forEach(s=>s.classList.remove('active')); document.querySelectorAll('.slot')[i].classList.add('active'); updateHand(); }
-        
-        function updateHand() {
-            if(!hand) return;
-            hand.material = getMat(slot);
-            // Animation reset
-            hand.rotation.set(0,0,0);
-        }
-
-        function run(mode) {
-            isGame = true;
-            openMenu('none');
-            document.getElementById('ui').style.display = 'block';
-            
+        function init3D() {
             scene = new THREE.Scene();
             sky = new THREE.Color(0x87ceeb); scene.background = sky;
+            
             camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 100);
-            renderer = new THREE.WebGLRenderer({antialias:false});
+            
+            renderer = new THREE.WebGLRenderer({antialias: false, powerPreference: "high-performance"});
             renderer.setSize(window.innerWidth, window.innerHeight);
-            if(!document.querySelector('canvas')) document.body.appendChild(renderer.domElement);
+            document.body.appendChild(renderer.domElement);
 
-            // Lighting
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            sun = new THREE.DirectionalLight(0xffffff, 0.8); scene.add(sun);
+            // Свет
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            sun = new THREE.DirectionalLight(0xffffff, 0.8);
+            sun.position.set(10, 20, 10);
+            scene.add(sun);
 
-            // World Gen
-            for(let x=-8; x<=8; x++) {
-                for(let z=-8; z<=8; z++) {
-                    placeBlock(x, 0, z, 0); // Grass floor
+            // Пол (чтобы не падать в пустоту сразу)
+            for(let x=-6; x<=6; x++) {
+                for(let z=-6; z<=6; z++) {
+                    buildBlock(x, 0, z, 0); // Трава
                 }
             }
 
-            // Player Setup
-            players.me = createPlayer(0x00ff00);
+            // Игрок (Стив)
+            players.me = createSteve(0x00ff00);
             scene.add(players.me);
-            players.me.visible = false; // Hidden in FP
-            
-            // 3D Hand (Child of Camera)
-            hand = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.4), getMat(slot));
-            hand.position.set(0.4, -0.4, -0.6);
+            players.me.visible = false; // Скрыт, т.к. 1 лицо по дефолту
+
+            // 3D Рука
+            hand = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), getMat(slot));
+            hand.position.set(0.3, -0.3, -0.5);
             hand.rotation.set(0.1, -0.1, 0);
             camera.add(hand);
             scene.add(camera);
 
-            setupControls();
-            
-            if(mode !== 'single') setupNet(mode);
-            loop();
+            animate(); // Запуск цикла рендера
         }
 
-        function placeBlock(x,y,z, type) {
-            const k = `${x},${y},${z}`;
-            if(world.has(k)) return;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), getMat(type));
-            b.position.set(x,y,z);
-            scene.add(b); world.set(k, b);
-        }
-
-        function createPlayer(color) {
+        function createSteve(color) {
             const g = new THREE.Group();
-            const mat = new THREE.MeshLambertMaterial({color:color});
+            const mat = new THREE.MeshLambertMaterial({color: color});
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5), mat); head.position.y = 1.6;
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.7,0.25), new THREE.MeshLambertMaterial({color:0x00aaff})); body.position.y = 1.0;
-            g.add(head, body);
-            // Add limbs logic here if needed
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.7,0.25), new THREE.MeshLambertMaterial({color: 0x00aaff})); body.position.y = 1.0;
+            // Ноги
+            const l1 = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.7,0.2), new THREE.MeshLambertMaterial({color: 0x000088})); l1.position.set(-0.15, 0.35, 0);
+            const l2 = l1.clone(); l2.position.x = 0.15;
+            g.add(head, body, l1, l2);
+            g.legs = {l1, l2};
             return g;
         }
 
+        function buildBlock(x, y, z, type) {
+            const k = `${x},${y},${z}`;
+            if(world.has(k)) return;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), getMat(type));
+            b.position.set(x, y, z);
+            scene.add(b); world.set(k, b);
+        }
+
+        function startGame(mode) {
+            document.querySelectorAll('.screen').forEach(s=>s.style.display='none');
+            document.getElementById('ui-layer').style.display = 'block';
+            isGame = true;
+            setupControls();
+            
+            if(mode !== 'single') {
+                const id = document.getElementById('srv-id').value || 'server1';
+                peer = mode==='host' ? new Peer('ac10_'+id) : new Peer();
+                peer.on('open', () => {
+                    if(mode==='host') peer.on('connection', c => { conn=c; netInit(); });
+                    else { conn = peer.connect('ac10_'+id); netInit(); }
+                });
+            }
+        }
+
+        /** --- 3. ФИЗИКА И ЛОГИКА --- **/
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Вращение мира в меню
+            if(!isGame) {
+                camera.position.set(Math.sin(Date.now()*0.0005)*10, 5, Math.cos(Date.now()*0.0005)*10);
+                camera.lookAt(0,0,0);
+                renderer.render(scene, camera);
+                return;
+            }
+
+            // День/Ночь
+            const time = Date.now() * 0.0002;
+            sun.position.set(Math.sin(time)*20, Math.cos(time)*20, 5);
+            sky.setHSL(0.6, 0.5, Math.max(0.1, Math.cos(time)*0.5+0.5));
+            scene.background = sky;
+
+            // Физика
+            vY -= 0.015;
+            myPos.y += vY;
+
+            const cx = Math.round(myPos.x), cz = Math.round(myPos.z), cy = Math.floor(myPos.y);
+            // Коллизия с полом
+            if(world.has(`${cx},${cy},${cz}`)) {
+                if(vY < 0) { myPos.y = cy + 1; vY = 0; }
+            }
+            if(myPos.y < -10) myPos.y = 15; // Респаун если упал
+
+            // Движение
+            const dx = mov.x * Math.cos(myRot) + mov.z * Math.sin(myRot);
+            const dz = mov.z * Math.cos(myRot) - mov.x * Math.sin(myRot);
+            
+            // Коллизия со стенами
+            if(!world.has(`${Math.round(myPos.x+dx)},${Math.floor(myPos.y)},${Math.round(myPos.z+dz)}`)) {
+                myPos.x += dx; myPos.z += dz;
+            }
+
+            // Анимация (покачивание руки/ног)
+            const walk = Math.sin(Date.now()*0.01) * (Math.abs(mov.x)+Math.abs(mov.z)) * 5;
+            if(isFP) {
+                camera.position.set(myPos.x, myPos.y+1.6, myPos.z);
+                camera.rotation.y = myRot;
+                hand.position.y = -0.3 + walk * 0.02; // Качание руки
+            } else {
+                players.me.position.set(myPos.x, myPos.y, myPos.z);
+                players.me.rotation.y = myRot;
+                players.me.legs.l1.rotation.x = walk;
+                players.me.legs.l2.rotation.x = -walk;
+                camera.position.set(myPos.x - Math.sin(myRot)*4, myPos.y+2.5, myPos.z - Math.cos(myRot)*4);
+                camera.lookAt(myPos.x, myPos.y+1, myPos.z);
+            }
+
+            // Сетевая синхронизация
+            if(conn && conn.open && Math.random()>0.8) conn.send({t:'mv', x:myPos.x, y:myPos.y, z:myPos.z, r:myRot});
+
+            renderer.render(scene, camera);
+        }
+
+        /** --- 4. УПРАВЛЕНИЕ --- **/
         function setupControls() {
             const ray = new THREE.Raycaster();
-            
-            const interact = (action) => {
-                // Hand Animation
-                hand.rotation.x = -0.5; setTimeout(()=>hand.rotation.x = 0.1, 150);
+            const action = (type) => {
+                // Анимация удара
+                if(hand) { hand.rotation.x = -0.5; setTimeout(()=>hand.rotation.x=0.1, 150); }
 
                 ray.setFromCamera(new THREE.Vector2(0,0), camera);
                 const hits = ray.intersectObjects(Array.from(world.values()));
                 if(hits.length) {
                     const h = hits[0];
-                    if(action === 'break') {
-                        scene.remove(h.object);
-                        world.delete(`${h.object.position.x},${h.object.position.y},${h.object.position.z}`);
+                    if(type==='br') {
+                        scene.remove(h.object); world.delete(`${h.object.position.x},${h.object.position.y},${h.object.position.z}`);
                         if(conn) conn.send({t:'br', p:h.object.position});
                     } else {
                         const p = h.point.add(h.face.normal.multiplyScalar(0.5)).floor();
-                        placeBlock(p.x, p.y, p.z, slot);
+                        buildBlock(p.x, p.y, p.z, slot);
                         if(conn) conn.send({t:'pl', x:p.x, y:p.y, z:p.z, m:slot});
                     }
                 }
-            };
-
-            document.getElementById('b-place').onclick = () => interact('place');
-            document.getElementById('b-break').onclick = () => interact('break');
-            document.getElementById('b-jump').onclick = () => { if(vY===0) vY = 0.25; };
-
-            window.ontouchstart = e => {
-                for(let t of e.changedTouches) {
-                    if(t.clientX < window.innerWidth/2) joyId = t.identifier;
-                    else { camId = t.identifier; lx = t.clientX; ly = t.clientY; }
-                }
-            };
-            window.ontouchmove = e => {
-                for(let t of e.changedTouches) {
-                    if(t.identifier === joyId) {
-                        const dx = t.clientX - 100, dy = t.clientY - (window.innerHeight - 100);
-                        const d = Math.min(50, Math.sqrt(dx*dx+dy*dy)), a = Math.atan2(dy, dx);
-                        mov = { x: Math.cos(a)*(d/50)*0.15, z: Math.sin(a)*(d/50)*0.15 };
-                        document.getElementById('joy-stick').style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-                    } else if(t.identifier === camId) {
-                        myRot -= (t.clientX - lx) * 0.005;
-                        camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x - (t.clientY - ly) * 0.005));
-                        lx = t.clientX; ly = t.clientY;
-                    }
-                }
-            };
-            window.ontouchend = e => {
-                for(let t of e.changedTouches) {
-                    if(t.identifier === joyId) { joyId=null; mov={x:0,z:0}; document.getElementById('joy-stick').style.transform='none'; }
-                }
-            }
-        }
-
-        function loop() {
-            requestAnimationFrame(loop);
-            if(!isGame) return;
-
-            // Day/Night Cycle
-            const time = Date.now() * 0.0005;
-            sun.position.set(Math.sin(time)*20, Math.cos(time)*20, 10);
-            sky.setHSL(0.6, 0.5, Math.max(0.1, Math.cos(time)*0.5+0.5));
-            scene.background = sky;
-
-            // Physics
-            vY -= 0.012; 
-            myPos.y += vY;
-            
-            // Collision (Floor)
-            const cx = Math.round(myPos.x), cz = Math.round(myPos.z), cy = Math.floor(myPos.y);
-            if(world.has(`${cx},${cy},${cz}`) || world.has(`${cx},${cy+1},${cz}`)) {
-                if(vY < 0) { myPos.y = cy + 1; vY = 0; }
-            }
-            if(myPos.y < -10) myPos.y = 10;
-
-            // Move
-            const dx = mov.x * Math.cos(myRot) + mov.z * Math.sin(myRot);
-            const dz = mov.z * Math.cos(myRot) - mov.x * Math.sin(myRot);
-            
-            // Wall Collision Check (Simple)
-            if(!world.has(`${Math.round(myPos.x+dx)},${Math.floor(myPos.y)},${Math.round(myPos.z+dz)}`)) {
-                myPos.x += dx; myPos.z += dz;
             }
 
-            // Sync Camera & Player Model
-            if(isFP) {
-                camera.position.set(myPos.x, myPos.y + 1.6, myPos.z);
-                camera.rotation.y = myRot;
-            } else {
-                players.me.position.copy(myPos);
-                players.me.rotation.y = myRot;
-                camera.position.set(myPos.x - Math.sin(myRot)*3, myPos.y + 2.5, myPos.z - Math.cos(myRot)*3);
-                camera.lookAt(myPos.x, myPos.y+1, myPos.z);
-            }
+            document.getElementById('b-place').onpointerdown = () => action('pl');
+            document.getElementById('b-break').onpointerdown = () => action('br');
+            document.getElementById('b-jump').onpointerdown = () => { if(vY === 0) vY = 0.28; };
 
-            if(conn && conn.open) conn.send({t:'mv', x:myPos.x, y:myPos.y, z:myPos.z, r:myRot});
-        }
-
-        function toggleView() {
-            isFP = !isFP;
-            document.getElementById('v-txt').innerText = isFP ? "1 ЛИЦО" : "3 ЛИЦО";
-            players.me.visible = !isFP;
-            hand.visible = isFP;
-        }
-
-        function toggleFS() { document.documentElement.requestFullscreen(); }
-
-        /** --- MULTIPLAYER --- **/
-        function setupNet(mode) {
-            const id = document.getElementById('srv-id').value || 'room1';
-            peer = mode==='host' ? new Peer('mcjs_'+id) : new Peer();
-            peer.on('open', () => {
-                if(mode==='host') peer.on('connection', c => { conn=c; netInit(); });
-                else { conn = peer.connect('mcjs_'+id); netInit(); }
+            window.addEventListener('pointerdown', e => {
+                if(e.target.closest('#controls') || e.target.closest('#toolbar') || e.target.closest('#fs-btn')) return;
+                if(e.clientX < window.innerWidth/2) joyId = e.pointerId;
+                else { camId = e.pointerId; lx = e.clientX; ly = e.clientY; }
             });
+            window.addEventListener('pointermove', e => {
+                if(e.pointerId === joyId) {
+                    const dx = e.clientX - 100, dy = e.clientY - (window.innerHeight - 100);
+                    const d = Math.min(50, Math.sqrt(dx*dx+dy*dy)), a = Math.atan2(dy, dx);
+                    mov = { x: Math.cos(a)*(d/50)*0.15, z: Math.sin(a)*(d/50)*0.15 };
+                    document.getElementById('joy-stick').style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+                }
+                if(e.pointerId === camId) {
+                    myRot -= (e.clientX - lx) * 0.007;
+                    camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x - (e.clientY - ly) * 0.007));
+                    lx = e.clientX; ly = e.clientY;
+                }
+            });
+            window.addEventListener('pointerup', e => {
+                if(e.pointerId === joyId) { joyId=null; mov={x:0,z:0}; document.getElementById('joy-stick').style.transform='none'; }
+                if(e.pointerId === camId) camId=null;
+            });
+        }
+
+        // Utils
+        function setSlot(i) { slot = i; document.querySelectorAll('.slot').forEach(s=>s.classList.remove('active')); document.querySelectorAll('.slot')[i].classList.add('active'); if(hand) hand.material = getMat(slot); }
+        function openMenu(id) { document.querySelectorAll('.screen').forEach(s=>s.style.display='none'); document.getElementById('m-'+id).style.display='flex'; }
+        function toggleView() { isFP=!isFP; document.getElementById('v-txt').innerText = isFP?"1 ЛИЦО":"3 ЛИЦО"; players.me.visible=!isFP; hand.visible=isFP; }
+        function toggleFS() { 
+            if(!document.fullscreenElement) document.documentElement.requestFullscreen(); 
+            else document.exitFullscreen(); 
+            setTimeout(() => { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); }, 500);
         }
         function netInit() {
             conn.on('data', d => {
-                if(d.t==='pl') placeBlock(d.x, d.y, d.z, d.m);
+                if(d.t==='pl') buildBlock(d.x, d.y, d.z, d.m);
                 if(d.t==='br') { scene.remove(world.get(`${d.p.x},${d.p.y},${d.p.z}`)); world.delete(`${d.p.x},${d.p.y},${d.p.z}`); }
                 if(d.t==='mv') {
-                    if(!players.other) { players.other = createPlayer(0xff0000); scene.add(players.other); }
-                    players.other.position.set(d.x, d.y, d.z);
-                    players.other.rotation.y = d.r;
+                    if(!players.op) { players.op = createSteve(0xff0000); scene.add(players.op); }
+                    players.op.position.set(d.x, d.y, d.z); players.op.rotation.y = d.r;
                 }
             });
         }
