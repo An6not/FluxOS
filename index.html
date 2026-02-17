@@ -3,80 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft Ultimate</title>
+    <title>AnnotCraft: Evolution</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --p-color: #00ff88; }
+        :root { --p-color: #00ff88; --btn-bg: rgba(60, 60, 60, 0.8); }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
             background: #000; font-family: 'Segoe UI', sans-serif;
-            user-select: none; -webkit-user-select: none; /* Запрет выделения текста */
+            user-select: none; -webkit-user-select: none; touch-action: none;
         }
-        canvas { display: block; touch-action: none; }
+        canvas { display: block; }
 
-        #ui-overlay { position: absolute; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
-        .window { background: #222; padding: 25px; border-radius: 20px; border: 2px solid var(--p-color); text-align: center; color: #fff; width: 300px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; }
-        button.primary { width: 100%; padding: 15px; background: var(--p-color); border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: #000; }
+        /* Экраны меню */
+        .screen { 
+            position: absolute; inset: 0; z-index: 1000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background: linear-gradient(45deg, #111, #222); transition: 0.3s;
+        }
+        .window { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 20px; border: 2px solid var(--p-color); text-align: center; color: #fff; width: 300px; backdrop-filter: blur(10px); }
+        h1 { color: var(--p-color); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px var(--p-color); }
+        
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; font-size: 16px; box-sizing: border-box; outline: none; }
+        button { 
+            width: 100%; padding: 15px; background: var(--btn-bg); border: 1px solid var(--p-color); border-radius: 10px; 
+            font-weight: bold; cursor: pointer; color: #fff; margin-top: 10px; transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:active { transform: scale(0.95); background: var(--p-color); color: #000; }
+        button.primary { background: var(--p-color); color: #000; border: none; font-size: 18px; }
 
-        #hud { position: absolute; top: 15px; left: 15px; color: white; pointer-events: none; text-shadow: 2px 2px 4px #000; }
-        #fs-btn { position: absolute; top: 15px; right: 15px; z-index: 1001; background: rgba(255,255,255,0.1); color: white; border: 1px solid white; padding: 8px; border-radius: 8px; cursor: pointer; }
+        /* HUD */
+        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; text-shadow: 2px 2px 4px #000; z-index: 100; font-weight: bold; }
+        #fs-btn { position: absolute; top: 20px; right: 20px; z-index: 1100; background: rgba(0,0,0,0.5); color: white; border: 1px solid white; padding: 10px; border-radius: 10px; }
 
-        /* Управление */
-        #action-controls { position: absolute; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 500; }
-        .act-btn { width: 65px; height: 65px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 10px; background: rgba(0,0,0,0.4); touch-action: none; }
-        #btn-jump { background: rgba(255,255,255,0.2); margin-bottom: 20px; }
-        #btn-break { border-color: #ff4444; }
-        #btn-place { border-color: var(--p-color); }
+        /* Кнопки управления */
+        #controls-layer { position: absolute; inset: 0; pointer-events: none; z-index: 500; display: none; }
+        #action-btns { position: absolute; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 12px; pointer-events: auto; }
+        .act-btn { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; background: rgba(0,0,0,0.4); }
+        #btn-jump { background: rgba(255,255,255,0.1); margin-bottom: 15px; }
+        #btn-break { border-color: #ff4444; color: #ff4444; }
+        #btn-place { border-color: var(--p-color); color: var(--p-color); }
 
-        #toolbar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 500; background: rgba(0,0,0,0.6); padding: 5px; border-radius: 10px; }
-        .slot { width: 40px; height: 40px; border: 2px solid #555; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 9px; }
-        .slot.active { border-color: var(--p-color); background: rgba(0,255,136,0.1); color: #fff; }
+        #toolbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 12px; border: 1px solid #444; }
+        .slot { width: 45px; height: 45px; border: 2px solid #555; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 10px; }
+        .slot.active { border-color: var(--p-color); background: rgba(0,255,136,0.2); color: #fff; box-shadow: 0 0 10px var(--p-color); }
 
-        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; display: none; z-index: 500; }
-        #joy-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: var(--p-color); border-radius: 50%; opacity: 0.6; }
+        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 130px; height: 130px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
+        #joy-stick { position: absolute; top: 40px; left: 40px; width: 50px; height: 50px; background: var(--p-color); border-radius: 50%; opacity: 0.6; pointer-events: none; }
+        
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <button id="fs-btn" onclick="toggleFS()">SCREEN</button>
-    <div id="hud">AnnotCraft v3.0</div>
+    <button id="fs-btn" onclick="toggleFS()">FULLSCREEN</button>
+    <div id="hud">AnnotCraft v3.5</div>
+    <div id="crosshair" style="display:none"></div>
 
-    <div id="toolbar">
-        <div class="slot active" id="s0" onclick="selBlock('DIRT', 0)">DIRT</div>
-        <div class="slot" id="s1" onclick="selBlock('WOOD', 1)">WOOD</div>
-        <div class="slot" id="s2" onclick="selBlock('STONE', 2)">STONE</div>
-    </div>
-
-    <div id="action-controls">
-        <div class="act-btn" id="btn-jump">JUMP</div>
-        <div class="act-btn" id="btn-break">BREAK</div>
-        <div class="act-btn" id="btn-place">PLACE</div>
-    </div>
-
-    <div id="ui-overlay">
+    <div id="menu-main" class="screen">
         <div class="window">
-            <h2 style="color:var(--p-color); margin:0 0 15px 0;">AnnotCraft</h2>
-            <input type="text" id="nick-in" placeholder="Ник" value="Annot">
-            <input type="text" id="srv-in" placeholder="Имя сервера">
-            <input type="password" id="pass-in" placeholder="Пароль">
-            <button class="primary" onclick="initApp('host')">СОЗДАТЬ</button>
-            <button class="primary" onclick="initApp('join')" style="background:#444; color:#fff; margin-top:10px;">ВОЙТИ</button>
+            <h1>AnnotCraft</h1>
+            <button class="primary" onclick="showScreen('single')">Одиночная игра</button>
+            <button onclick="showScreen('multi')">Мультиплеер</button>
         </div>
     </div>
 
-    <div id="joy-base"><div id="joy-stick"></div></div>
+    <div id="menu-multi" class="screen" style="display:none">
+        <div class="window">
+            <h1>Мультиплеер</h1>
+            <input type="text" id="nick-in" placeholder="Твой ник" value="Annot">
+            <input type="text" id="srv-in" placeholder="Название комнаты">
+            <input type="password" id="pass-in" placeholder="Пароль хоста">
+            <button class="primary" onclick="initApp('host')">Создать сервер</button>
+            <button onclick="initApp('join')">Войти к другу</button>
+            <button onclick="showScreen('main')" style="border-color:#777; font-size:12px;">Назад</button>
+        </div>
+    </div>
+
+    <div id="controls-layer">
+        <div id="toolbar">
+            <div class="slot active" id="s0" onclick="selBlock('DIRT', 0)">DIRT</div>
+            <div class="slot" id="s1" onclick="selBlock('WOOD', 1)">WOOD</div>
+            <div class="slot" id="s2" onclick="selBlock('STONE', 2)">STONE</div>
+        </div>
+
+        <div id="action-btns">
+            <div class="act-btn" id="btn-jump">JUMP</div>
+            <div class="act-btn" id="btn-break">BREAK</div>
+            <div class="act-btn" id="btn-place">PLACE</div>
+        </div>
+
+        <div id="joy-base"><div id="joy-stick"></div></div>
+    </div>
 
     <script>
         /** --- ТЕКСТУРЫ --- **/
-        function createPixelTexture(color1, color2) {
+        function createTex(c1, c2) {
             const canvas = document.createElement('canvas');
             canvas.width = 16; canvas.height = 16;
             const ctx = canvas.getContext('2d');
             for(let x=0; x<16; x++) {
                 for(let y=0; y<16; y++) {
-                    ctx.fillStyle = Math.random() > 0.5 ? color1 : color2;
+                    ctx.fillStyle = Math.random() > 0.5 ? c1 : c2;
                     ctx.fillRect(x, y, 1, 1);
                 }
             }
@@ -85,50 +114,60 @@
             return tex;
         }
 
-        const TEX = {
-            GRASS: new THREE.MeshLambertMaterial({ map: createPixelTexture('#5a9a44', '#4e8a3a') }),
-            DIRT: new THREE.MeshLambertMaterial({ map: createPixelTexture('#8b4513', '#6d350f') }),
-            WOOD: new THREE.MeshLambertMaterial({ map: createPixelTexture('#6d4c41', '#5d3f35') }),
-            STONE: new THREE.MeshLambertMaterial({ map: createPixelTexture('#808080', '#707070') })
+        const MATS = {
+            GRASS: new THREE.MeshLambertMaterial({ map: createTex('#5a9a44', '#4e8a3a') }),
+            DIRT: new THREE.MeshLambertMaterial({ map: createTex('#8b4513', '#6d350f') }),
+            WOOD: new THREE.MeshLambertMaterial({ map: createTex('#6d4c41', '#5d3f35') }),
+            STONE: new THREE.MeshLambertMaterial({ map: createTex('#808080', '#707070') })
         };
 
         /** --- ГЛОБАЛЫ --- **/
-        let scene, camera, renderer, peer, conn, myNick, isHost = false;
+        let scene, camera, renderer, peer, conn, myNick, isHost = false, gameMode = 'none';
         let players = {}, worldBlocks = new Map();
-        let moveDir = { x: 0, z: 0 }, selMat = 'DIRT';
-        let vY = 0, isGrounded = false;
-        let joystickTouchId = null, cameraTouchId = null, lastX, lastY;
+        let moveDir = { x: 0, z: 0 }, selMat = 'DIRT', vY = 0, isGrounded = false;
+        let joyId = null, camId = null, lx, ly;
 
-        function selBlock(m, idx) {
-            selMat = m;
-            document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
-            document.getElementById('s'+idx).classList.add('active');
+        function showScreen(type) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            if(type === 'main') document.getElementById('menu-main').style.display = 'flex';
+            if(type === 'multi') document.getElementById('menu-multi').style.display = 'flex';
+            if(type === 'single') {
+                gameMode = 'single';
+                document.getElementById('menu-main').style.display = 'none';
+                startWorld();
+            }
         }
 
-        /** --- NETWORK --- **/
+        function selBlock(m, i) {
+            selMat = m;
+            document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+            document.getElementById('s'+i).classList.add('active');
+        }
+
+        /** --- СЕТЬ --- **/
         function initApp(mode) {
-            myNick = document.getElementById('nick-in').value;
+            myNick = document.getElementById('nick-in').value || "Guest";
             let srv = document.getElementById('srv-in').value.trim().toLowerCase();
-            if(!srv) return alert("Нужно имя сервера");
+            if(!srv) return alert("Введите имя комнаты");
+            
+            gameMode = 'multi';
             isHost = (mode === 'host');
-            peer = isHost ? new Peer("annot_mc_" + srv) : new Peer();
+            peer = isHost ? new Peer("annot_v3_" + srv) : new Peer();
+            
             peer.on('open', () => {
                 if(isHost) {
-                    document.getElementById('hud').innerText = "Сервер: " + srv;
+                    document.getElementById('hud').innerText = "Сервер: " + srv + " | Ждем игрока...";
                     peer.on('connection', c => { conn = c; setupNet(); });
                 } else {
-                    conn = peer.connect("annot_mc_" + srv);
+                    conn = peer.connect("annot_v3_" + srv);
                     setupNet();
                 }
             });
+            peer.on('error', () => alert("Ошибка! Название занято или сервер не найден."));
         }
 
         function setupNet() {
-            conn.on('open', () => {
-                document.getElementById('ui-overlay').style.display = 'none';
-                if('ontouchstart' in window) document.getElementById('joy-base').style.display = 'block';
-                init3D();
-            });
+            conn.on('open', () => startWorld());
             conn.on('data', d => {
                 if(d.type==='sync') syncFriend(d);
                 if(d.type==='place') doPlace(d.pos, d.mat, false);
@@ -136,33 +175,38 @@
             });
         }
 
-        /** --- STEVE MODEL --- **/
+        /** --- МОДЕЛЬ --- **/
         function createSteve(color) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshLambertMaterial({color});
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), mat);
+            const g = new THREE.Group();
+            const skin = new THREE.MeshLambertMaterial({color});
+            const clothes = new THREE.MeshLambertMaterial({color: 0x00aaff});
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skin);
             head.position.y = 1.6;
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.25), new THREE.MeshLambertMaterial({color: 0x00aaff}));
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.25), clothes);
             body.position.y = 1.05;
-            
             const limbGeo = new THREE.BoxGeometry(0.2, 0.7, 0.2);
-            const armL = new THREE.Mesh(limbGeo, mat); armL.position.set(-0.35, 1.05, 0);
-            const armR = new THREE.Mesh(limbGeo, mat); armR.position.set(0.35, 1.05, 0);
-            const legL = new THREE.Mesh(limbGeo, new THREE.MeshLambertMaterial({color: 0x000088})); legL.position.set(-0.15, 0.35, 0);
-            const legR = legL.clone(); legR.position.x = 0.15;
-
-            group.add(head, body, armL, armR, legL, legR);
-            group.parts = { armL, armR, legL, legR };
-            return group;
+            const aL = new THREE.Mesh(limbGeo, skin); aL.position.set(-0.35, 1.05, 0);
+            const aR = new THREE.Mesh(limbGeo, skin); aR.position.set(0.35, 1.05, 0);
+            const lL = new THREE.Mesh(limbGeo, new THREE.MeshLambertMaterial({color: 0x000088})); lL.position.set(-0.15, 0.35, 0);
+            const lR = lL.clone(); lR.position.x = 0.15;
+            g.add(head, body, aL, aR, lL, lR);
+            g.limbs = { aL, aR, lL, lR };
+            return g;
         }
 
-        /** --- 3D & PHYSICS --- **/
-        function init3D() {
+        /** --- МИР --- **/
+        function startWorld() {
+            document.getElementById('menu-multi').style.display = 'none';
+            document.getElementById('menu-main').style.display = 'none';
+            document.getElementById('controls-layer').style.display = 'block';
+            document.getElementById('crosshair').style.display = 'block';
+
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87ceeb);
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -173,7 +217,7 @@
             const box = new THREE.BoxGeometry(1, 1, 1);
             for(let x=-20; x<=20; x++) {
                 for(let z=-20; z<=20; z++) {
-                    const b = new THREE.Mesh(box, TEX.GRASS);
+                    const b = new THREE.Mesh(box, MATS.GRASS);
                     b.position.set(x, 0, z);
                     scene.add(b);
                     worldBlocks.set(`${x},0,${z}`, b);
@@ -189,27 +233,27 @@
             animate();
         }
 
-        function checkCollision(newPos) {
-            const bx = Math.round(newPos.x), by = Math.round(newPos.y), bz = Math.round(newPos.z);
-            return worldBlocks.has(`${bx},${by},${bz}`) || worldBlocks.has(`${bx},${by+1},${bz}`);
+        function checkCol(p) {
+            const x = Math.round(p.x), y = Math.round(p.y), z = Math.round(p.z);
+            return worldBlocks.has(`${x},${y},${z}`) || worldBlocks.has(`${x},${y+1},${z}`);
         }
 
-        function doPlace(pos, mat, send) {
-            const k = `${Math.round(pos.x)},${Math.round(pos.y)},${Math.round(pos.z)}`;
+        function doPlace(p, m, s) {
+            const k = `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}`;
             if(worldBlocks.has(k)) return;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), TEX[mat]);
-            b.position.set(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), MATS[m]);
+            b.position.set(Math.round(p.x), Math.round(p.y), Math.round(p.z));
             scene.add(b);
             worldBlocks.set(k, b);
-            if(send && conn) conn.send({type:'place', pos: b.position, mat});
+            if(s && conn) conn.send({type:'place', pos: b.position, mat: m});
         }
 
-        function doBreak(pos, send) {
-            const k = `${Math.round(pos.x)},${Math.round(pos.y)},${Math.round(pos.z)}`;
-            if(worldBlocks.has(k) && Math.round(pos.y) !== 0) {
+        function doBreak(p, s) {
+            const k = `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}`;
+            if(worldBlocks.has(k) && Math.round(p.y) !== 0) {
                 scene.remove(worldBlocks.get(k));
                 worldBlocks.delete(k);
-                if(send && conn) conn.send({type:'break', pos});
+                if(s && conn) conn.send({type:'break', pos: p});
             }
         }
 
@@ -217,66 +261,64 @@
             if(!players.friend) { players.friend = createSteve(isHost?0xffccaa:0x00ff88); scene.add(players.friend); }
             players.friend.position.lerp(new THREE.Vector3(d.x, d.y, d.z), 0.3);
             players.friend.rotation.y = d.ry;
-            animateLimb(players.friend, d.moving);
+            animSteve(players.friend, d.mov);
         }
 
-        function animateLimb(p, moving) {
+        function animSteve(p, mov) {
             const t = Date.now() * 0.01;
-            if(moving) {
-                p.parts.armL.rotation.x = Math.sin(t) * 0.5;
-                p.parts.armR.rotation.x = -Math.sin(t) * 0.5;
-                p.parts.legL.rotation.x = -Math.sin(t) * 0.5;
-                p.parts.legR.rotation.x = Math.sin(t) * 0.5;
+            if(mov) {
+                p.limbs.aL.rotation.x = Math.sin(t) * 0.5; p.limbs.aR.rotation.x = -Math.sin(t) * 0.5;
+                p.limbs.lL.rotation.x = -Math.sin(t) * 0.5; p.limbs.lR.rotation.x = Math.sin(t) * 0.5;
             } else {
-                p.parts.armL.rotation.x = p.parts.armR.rotation.x = 0;
-                p.parts.legL.rotation.x = p.parts.legR.rotation.x = 0;
+                p.limbs.aL.rotation.x = p.limbs.aR.rotation.x = 0;
+                p.limbs.lL.rotation.x = p.limbs.lR.rotation.x = 0;
             }
         }
 
-        /** --- CONTROLS --- **/
+        /** --- УПРАВЛЕНИЕ --- **/
         function setupControls() {
             const ray = new THREE.Raycaster();
-            document.getElementById('btn-jump').onpointerdown = () => { if(isGrounded) vY = 0.25; };
-            document.getElementById('btn-place').onpointerdown = () => action(true);
-            document.getElementById('btn-break').onpointerdown = () => action(false);
+            document.getElementById('btn-jump').onpointerdown = (e) => { e.stopPropagation(); if(isGrounded) vY = 0.25; };
+            document.getElementById('btn-place').onpointerdown = (e) => { e.stopPropagation(); act(true); };
+            document.getElementById('btn-break').onpointerdown = (e) => { e.stopPropagation(); act(false); };
 
-            function action(isPlace) {
+            function act(isP) {
                 ray.setFromCamera(new THREE.Vector2(0,0), camera);
                 const hits = ray.intersectObjects(Array.from(worldBlocks.values()));
                 if(hits.length > 0) {
                     const h = hits[0];
-                    if(isPlace) doPlace(h.point.add(h.face.normal.clone().multiplyScalar(0.5)), selMat, true);
+                    if(isP) doPlace(h.point.add(h.face.normal.clone().multiplyScalar(0.5)), selMat, true);
                     else doBreak(h.object.position, true);
                 }
             }
 
             window.addEventListener('touchstart', e => {
                 for(let t of e.changedTouches) {
-                    if(t.clientX < window.innerWidth/2) joystickTouchId = t.identifier;
-                    else { cameraTouchId = t.identifier; lastX = t.clientX; lastY = t.clientY; }
+                    if(t.clientX < window.innerWidth/2) joyId = t.identifier;
+                    else { camId = t.identifier; lx = t.clientX; ly = t.clientY; }
                 }
             });
 
             window.addEventListener('touchmove', e => {
                 for(let t of e.changedTouches) {
-                    if(t.identifier === joystickTouchId) {
+                    if(t.identifier === joyId) {
                         const b = document.getElementById('joy-base').getBoundingClientRect();
-                        const dx = t.clientX - (b.left + 60), dy = t.clientY - (b.top + 60);
-                        const dist = Math.min(40, Math.sqrt(dx*dx + dy*dy)), ang = Math.atan2(dy, dx);
-                        moveDir = { x: Math.cos(ang)*(dist/40)*0.12, z: Math.sin(ang)*(dist/40)*0.12 };
+                        const dx = t.clientX - (b.left + 65), dy = t.clientY - (b.top + 65);
+                        const dist = Math.min(45, Math.sqrt(dx*dx + dy*dy)), ang = Math.atan2(dy, dx);
+                        moveDir = { x: Math.cos(ang)*(dist/45)*0.12, z: Math.sin(ang)*(dist/45)*0.12 };
                         document.getElementById('joy-stick').style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px)`;
-                    } else if(t.identifier === cameraTouchId) {
-                        players.me.rotation.y -= (t.clientX - lastX) * 0.007;
-                        camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x - (t.clientY - lastY) * 0.007));
-                        lastX = t.clientX; lastY = t.clientY;
+                    } else if(t.identifier === camId) {
+                        players.me.rotation.y -= (t.clientX - lx) * 0.007;
+                        camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x - (t.clientY - ly) * 0.007));
+                        lx = t.clientX; ly = t.clientY;
                     }
                 }
             });
 
             window.addEventListener('touchend', e => {
                 for(let t of e.changedTouches) {
-                    if(t.identifier === joystickTouchId) { joystickTouchId = null; moveDir = {x:0, z:0}; document.getElementById('joy-stick').style.transform = `translate(0,0)`; }
-                    if(t.identifier === cameraTouchId) cameraTouchId = null;
+                    if(t.identifier === joyId) { joyId = null; moveDir = {x:0, z:0}; document.getElementById('joy-stick').style.transform = `translate(0,0)`; }
+                    if(t.identifier === camId) camId = null;
                 }
             });
         }
@@ -284,26 +326,24 @@
         function animate() {
             requestAnimationFrame(animate);
             if(players.me) {
-                // Гравитация и прыжок
-                vY -= 0.015;
-                players.me.position.y += vY;
+                vY -= 0.015; players.me.position.y += vY;
                 if(players.me.position.y < 1) { players.me.position.y = 1; vY = 0; isGrounded = true; } 
                 else isGrounded = false;
 
-                // Движение и коллизии
-                const rot = players.me.rotation.y;
-                const nextX = moveDir.x * Math.cos(rot) + moveDir.z * Math.sin(rot);
-                const nextZ = moveDir.z * Math.cos(rot) - moveDir.x * Math.sin(rot);
+                const r = players.me.rotation.y;
+                const nX = moveDir.x * Math.cos(r) + moveDir.z * Math.sin(r);
+                const nZ = moveDir.z * Math.cos(r) - moveDir.x * Math.sin(r);
                 
-                if(!checkCollision({x: players.me.position.x + nextX, y: players.me.position.y, z: players.me.position.z + nextZ})) {
-                    players.me.position.x += nextX;
-                    players.me.position.z += nextZ;
+                if(!checkCol({x: players.me.position.x + nX, y: players.me.position.y, z: players.me.position.z + nZ})) {
+                    players.me.position.x += nX; players.me.position.z += nZ;
                 }
 
-                const moving = Math.abs(moveDir.x) > 0.01 || Math.abs(moveDir.z) > 0.01;
-                animateLimb(players.me, moving);
+                const mov = Math.abs(moveDir.x) > 0.01 || Math.abs(moveDir.z) > 0.01;
+                animSteve(players.me, mov);
 
-                if(conn && conn.open) conn.send({type:'sync', x:players.me.position.x, y:players.me.position.y, z:players.me.position.z, ry:rot, moving});
+                if(gameMode === 'multi' && conn && conn.open) {
+                    conn.send({type:'sync', x:players.me.position.x, y:players.me.position.y, z:players.me.position.z, ry:r, mov});
+                }
             }
             renderer.render(scene, camera);
         }
@@ -312,6 +352,13 @@
             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
             else document.exitFullscreen();
         }
+
+        window.addEventListener('resize', () => {
+            if(!renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
