@@ -3,170 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft Ultimate v18.0</title>
+    <title>AnnotCraft Platinum v20.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --mc-gui: #c6c6c6; --mc-border: #000; }
+        :root { --mc-gui: #c6c6c6; --mc-shadow: rgba(0,0,0,0.5); }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
-            background: #000; font-family: 'Courier New', monospace; 
-            touch-action: none; -webkit-user-select: none; user-select: none;
+            background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            touch-action: none; -webkit-user-select: none;
         }
 
-        /* Кнопки в стиле Minecraft */
-        .mc-btn {
-            background: #7c7c7c; border: 3px solid var(--mc-border); color: #fff; padding: 15px;
-            margin: 10px 0; width: 100%; font-weight: bold; cursor: pointer;
-            box-shadow: inset 4px 4px #fff, inset -4px -4px #333; text-shadow: 2px 2px #000;
-            display: block; box-sizing: border-box; text-align: center; font-size: 16px;
+        /* Полная виньетка для погружения */
+        #viewport-overlay {
+            position: absolute; inset: 0; pointer-events: none; z-index: 500;
+            background: radial-gradient(circle, transparent 40%, var(--mc-shadow) 150%);
         }
-        .mc-btn:active { box-shadow: inset -4px -4px #fff, inset 4px 4px #333; transform: translateY(2px); }
 
         /* Экраны меню */
-        .screen { position: absolute; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); }
-        .panel { background: var(--mc-gui); border: 4px solid var(--mc-border); padding: 30px; width: 340px; box-shadow: 0 0 40px #000; }
-        
-        /* Игровой интерфейс (HUD) */
+        .screen { 
+            position: absolute; inset: 0; z-index: 2000; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+        }
+        .panel { 
+            background: var(--mc-gui); border: 4px solid #000; padding: 30px; 
+            width: 320px; box-shadow: 10px 10px 0px #333; 
+        }
+
+        .mc-btn {
+            background: #7c7c7c; border: 3px solid #000; color: #fff; padding: 15px;
+            margin: 10px 0; width: 100%; font-weight: bold; cursor: pointer;
+            box-shadow: inset 4px 4px #fff, inset -4px -4px #333; text-shadow: 2px 2px #000;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .mc-btn:active { transform: scale(0.98); box-shadow: inset -2px -2px #fff, inset 2px 2px #333; }
+
+        /* HUD */
         #ui-hud { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 1000; }
         
-        #top-bar { 
-            position: absolute; top: 15px; left: 15px; right: 15px; 
-            display: flex; gap: 10px; pointer-events: auto; 
-        }
-        .hud-btn { 
-            padding: 10px 15px; background: rgba(0,0,0,0.6); border: 2px solid #fff; 
-            color: #fff; font-size: 12px; font-weight: bold; cursor: pointer; border-radius: 2px;
-        }
-
-        /* Крестик по центру */
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            position: absolute; top: 50%; left: 50%; width: 24px; height: 24px;
             transform: translate(-50%, -50%); pointer-events: none;
         }
-        #crosshair::before, #crosshair::after {
-            content: ''; position: absolute; background: #fff; mix-blend-mode: difference;
-        }
-        #crosshair::before { left: 9px; top: 0; width: 2px; height: 20px; }
-        #crosshair::after { left: 0; top: 9px; width: 20px; height: 2px; }
+        #crosshair::before { content: ''; position: absolute; top: 11px; left: 0; width: 24px; height: 2px; background: #fff; mix-blend-mode: difference; }
+        #crosshair::after { content: ''; position: absolute; top: 0; left: 11px; width: 2px; height: 24px; background: #fff; mix-blend-mode: difference; }
 
+        /* Компактный Хотбар */
         #hotbar { 
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); 
-            display: flex; background: rgba(0,0,0,0.7); padding: 5px; border: 4px solid #111; pointer-events: auto; 
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); 
+            display: flex; background: rgba(0,0,0,0.8); padding: 5px; border: 3px solid #111; pointer-events: auto; 
         }
-        .slot { width: 52px; height: 52px; border: 2px solid #8b8b8b; margin: 0 3px; background: rgba(255,255,255,0.05); }
-        .slot.active { border: 4px solid #fff; transform: scale(1.1); background: rgba(255,255,255,0.2); }
+        .slot { 
+            width: 46px; height: 46px; border: 2px solid #555; margin: 0 3px; 
+            transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .slot.active { border: 4px solid #fff; transform: translateY(-5px) scale(1.1); background: rgba(255,255,255,0.1); }
         .slot canvas { width: 100%; height: 100%; image-rendering: pixelated; }
 
-        /* Джойстик */
-        #joy-base { position: absolute; bottom: 60px; left: 60px; width: 120px; height: 120px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: auto; }
-        #joy-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #fff; border-radius: 50%; opacity: 0.6; }
+        /* Органы управления */
+        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 110px; height: 110px; border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; }
+        #joy-stick { position: absolute; top: 30px; left: 30px; width: 50px; height: 50px; background: #fff; border-radius: 50%; opacity: 0.5; box-shadow: 0 0 15px #fff; }
 
-        /* Кнопки действий */
-        #action-btns { position: absolute; bottom: 60px; right: 35px; display: flex; flex-direction: column; gap: 15px; pointer-events: auto; }
+        #action-btns { position: absolute; bottom: 50px; right: 40px; display: flex; flex-direction: column; gap: 20px; pointer-events: auto; }
         .circle-btn { 
-            width: 80px; height: 80px; border-radius: 50%; background: rgba(0,0,0,0.5); 
+            width: 85px; height: 85px; border-radius: 50%; background: rgba(0,0,0,0.6); 
             border: 3px solid #fff; color: #fff; display: flex; align-items: center; 
-            justify-content: center; font-size: 11px; font-weight: bold; text-shadow: 1px 1px #000;
+            justify-content: center; font-size: 12px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
-        input { width: 100%; padding: 12px; margin-bottom: 12px; box-sizing: border-box; background: #444; color: #fff; border: 2px solid #000; font-family: inherit; }
+        #debug-panel { position: absolute; top: 15px; left: 15px; color: #fff; font-size: 10px; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 4px; pointer-events: auto; }
+        input { width: 100%; padding: 15px; margin: 10px 0; background: #222; color: #eee; border: 2px solid #000; outline: none; }
     </style>
 </head>
 <body>
 
+    <div id="viewport-overlay"></div>
+
     <div id="m-main" class="screen">
+        <h1 style="color:#fff; text-shadow: 4px 4px #000; font-size: 40px; margin-bottom: 20px;">ANNOT CRAFT</h1>
         <div class="panel">
-            <h1 style="text-align:center; color:#333; margin:0 0 20px 0; letter-spacing: 2px;">ANNOT CRAFT</h1>
-            <button class="mc-btn" onclick="startEngine('single')">ОДИНОЧНЫЙ МИР</button>
-            <button class="mc-btn" onclick="toggleScreen('multi')">СЕТЕВАЯ ИГРА</button>
-            <button class="mc-btn" onclick="reqFS()">ПОЛНЫЙ ЭКРАН</button>
-            <div style="font-size: 10px; text-align: center; color: #666; margin-top: 10px;">ULTIMATE v18.0 - NO JITTER</div>
+            <button class="mc-btn" onclick="initEngine('single')">Одиночный мир</button>
+            <button class="mc-btn" onclick="setScreen('multi')">Сетевая игра</button>
+            <button class="mc-btn" onclick="toggleFull()">Полный экран</button>
+            <p style="font-size:9px; color:#555; text-align:center;">BUILD 2026.02.18 / PLATINUM EDITION</p>
         </div>
     </div>
 
     <div id="m-multi" class="screen" style="display:none">
         <div class="panel">
-            <h2 style="color:#333; margin-top:0;">МУЛЬТИПЛЕЕР</h2>
-            <input id="room-id" type="text" placeholder="ID КОМНАТЫ">
-            <button class="mc-btn" onclick="startEngine('host')">СОЗДАТЬ СЕРВЕР</button>
-            <button class="mc-btn" onclick="startEngine('join')">ВОЙТИ К ДРУГУ</button>
-            <button class="mc-btn" onclick="toggleScreen('main')">НАЗАД</button>
+            <h2 style="margin:0 0 15px 0;">MULTIPLAYER</h2>
+            <input id="room-input" type="text" placeholder="ID Комнаты (напр. 777)">
+            <button class="mc-btn" onclick="initEngine('host')">Создать Хост</button>
+            <button class="mc-btn" onclick="initEngine('join')">Присоединиться</button>
+            <button class="mc-btn" onclick="setScreen('main')">Назад</button>
         </div>
     </div>
 
     <div id="ui-hud">
-        <div id="top-bar">
-            <div class="hud-btn" onclick="gamePause(true)">PAUSE</div>
-            <div class="hud-btn" onclick="resizeFix()">FIX UI</div>
-            <div id="debug-text" style="color:#fff; font-size:11px; margin-left:auto; background:rgba(0,0,0,0.5); padding:5px;">FPS: 60</div>
+        <div id="debug-panel">
+            FPS: <span id="fps">60</span><br>
+            XYZ: <span id="coords">0, 0, 0</span><br>
+            CHUNKS: 1
         </div>
-
+        
         <div id="crosshair"></div>
 
         <div id="hotbar">
-            <div class="slot active" onclick="setSlot(0)"><canvas id="ic0"></canvas></div>
-            <div class="slot" onclick="setSlot(1)"><canvas id="ic1"></canvas></div>
-            <div class="slot" onclick="setSlot(2)"><canvas id="ic2"></canvas></div>
-            <div class="slot" onclick="setSlot(3)"><canvas id="ic3"></canvas></div>
-            <div class="slot" onclick="setSlot(4)"><canvas id="ic4"></canvas></div>
+            <div class="slot active" onclick="pickSlot(0)"><canvas id="c0"></canvas></div>
+            <div class="slot" onclick="pickSlot(1)"><canvas id="c1"></canvas></div>
+            <div class="slot" onclick="pickSlot(2)"><canvas id="c2"></canvas></div>
+            <div class="slot" onclick="pickSlot(3)"><canvas id="c3"></canvas></div>
+            <div class="slot" onclick="pickSlot(4)"><canvas id="c4"></canvas></div>
         </div>
 
         <div id="action-btns">
-            <div class="circle-btn" style="border-color:#5f5" onpointerdown="doAction('place')">PLACE</div>
-            <div class="circle-btn" style="border-color:#f55" onpointerdown="doAction('break')">BREAK</div>
-            <div class="circle-btn" style="width:60px; height:60px; align-self:center;" onpointerdown="doJump()">JUMP</div>
+            <div class="circle-btn" style="border-color:#4CAF50;" onpointerdown="handleInteraction('place')">ПОСТАВИТЬ</div>
+            <div class="circle-btn" style="border-color:#F44336;" onpointerdown="handleInteraction('break')">СЛОМАТЬ</div>
+            <div class="circle-btn" style="width:60px; height:60px; align-self:center;" onpointerdown="playerJump()">ПРЫЖОК</div>
         </div>
 
         <div id="joy-base"><div id="joy-stick"></div></div>
     </div>
 
-    <div id="m-pause" class="screen" style="display:none">
-        <div class="panel">
-            <h2 style="color:#333; margin-top:0;">ПАУЗА</h2>
-            <button class="mc-btn" onclick="gamePause(false)">ПРОДОЛЖИТЬ</button>
-            <button class="mc-btn" onclick="toggleView()">ВИД: <span id="view-mode">1-ЛИЦО</span></button>
-            <button class="mc-btn" onclick="location.reload()">ВЫЙТИ В МЕНЮ</button>
-        </div>
-    </div>
-
     <script>
-        /** --- 1. СИСТЕМА ПРОФЕССИОНАЛЬНЫХ ТЕКСТУР --- **/
-        function generateHighResTexture(type) {
-            const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 16;
+        /** --- 1. ГЕНЕРАТОР ТЕКСТУР ВЫСОКОГО КАЧЕСТВА --- **/
+        function generateDetailedTexture(blockType) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
             const ctx = canvas.getContext('2d');
-            
-            const fillBase = (r, g, b) => {
+
+            const drawGrain = (r, g, b, noiseStrength = 20) => {
                 for(let i=0; i<16; i++) {
                     for(let j=0; j<16; j++) {
-                        const noise = (Math.random() - 0.5) * 20;
-                        ctx.fillStyle = `rgb(${r + noise}, ${g + noise}, ${b + noise})`;
+                        const n = (Math.random() - 0.5) * noiseStrength;
+                        ctx.fillStyle = `rgb(${r+n},${g+n},${b+n})`;
                         ctx.fillRect(i, j, 1, 1);
                     }
                 }
             };
 
-            if(type === 'grass_top') {
-                fillBase(91, 168, 72);
-            } else if(type === 'dirt') {
-                fillBase(121, 85, 72);
-            } else if(type === 'grass_side') {
-                fillBase(121, 85, 72);
-                ctx.fillStyle = '#5ba848'; ctx.fillRect(0, 0, 16, 6);
-                for(let i=0; i<16; i++) if(Math.random()>0.5) ctx.fillRect(i, 6, 1, 1);
-            } else if(type === 'stone') {
-                fillBase(120, 120, 120);
-                ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(0,0,16,1); ctx.fillRect(0,0,1,16);
-            } else if(type === 'wood') {
-                fillBase(109, 76, 65);
-                ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(3,0,2,16); ctx.fillRect(11,0,2,16);
-            } else if(type === 'leaves') {
-                fillBase(46, 125, 50);
-                for(let i=0; i<30; i++) { ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(Math.random()*16, Math.random()*16, 1, 1); }
-            } else if(type === 'oven') {
-                fillBase(100, 100, 100);
-                ctx.fillStyle = '#111'; ctx.fillRect(3, 3, 10, 6);
-                ctx.fillStyle = '#ff6600'; ctx.fillRect(7, 12, 2, 2);
+            if(blockType === 'grass_top') {
+                drawGrain(91, 168, 72, 30);
+                // Добавляем "травинки"
+                for(let k=0; k<10; k++) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                    ctx.fillRect(Math.random()*16, Math.random()*16, 1, 2);
+                }
+            } else if(blockType === 'dirt') {
+                drawGrain(121, 85, 72, 15);
+            } else if(blockType === 'grass_side') {
+                drawGrain(121, 85, 72, 15);
+                ctx.fillStyle = '#5ba848';
+                ctx.fillRect(0, 0, 16, 6);
+                for(let i=0; i<16; i++) if(Math.random()>0.4) ctx.fillRect(i, 6, 1, 1);
+            } else if(blockType === 'stone') {
+                drawGrain(110, 110, 110, 25);
+                ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0,0,16,1);
+                ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(0,15,16,1);
+            } else if(blockType === 'wood') {
+                drawGrain(109, 76, 65, 10);
+                ctx.fillStyle = '#4e342e'; ctx.fillRect(2,0,2,16); ctx.fillRect(12,0,2,16);
+            } else if(blockType === 'leaf') {
+                drawGrain(46, 125, 50, 40);
             }
 
             const tex = new THREE.CanvasTexture(canvas);
@@ -174,190 +173,201 @@
             return tex;
         }
 
-        const ASSETS = {
-            gt: generateHighResTexture('grass_top'), gs: generateHighResTexture('grass_side'),
-            d: generateHighResTexture('dirt'), s: generateHighResTexture('stone'),
-            w: generateHighResTexture('wood'), l: generateHighResTexture('leaves'),
-            o: generateHighResTexture('oven')
+        const TEXTURES = {
+            gt: generateDetailedTexture('grass_top'),
+            gs: generateDetailedTexture('grass_side'),
+            d: generateDetailedTexture('dirt'),
+            s: generateDetailedTexture('stone'),
+            w: generateDetailedTexture('wood'),
+            l: generateDetailedTexture('leaf')
         };
 
-        function getBlockMat(id) {
-            const m = t => new THREE.MeshLambertMaterial({ map: t });
-            if(id === 0) return [m(ASSETS.gs), m(ASSETS.gs), m(ASSETS.gt), m(ASSETS.d), m(ASSETS.gs), m(ASSETS.gs)];
-            if(id === 1) return m(ASSETS.s);
-            if(id === 2) return m(ASSETS.w);
-            if(id === 3) return new THREE.MeshLambertMaterial({ map: ASSETS.l, transparent: true, opacity: 0.85 });
-            if(id === 4) return [m(ASSETS.s), m(ASSETS.s), m(ASSETS.s), m(ASSETS.s), m(ASSETS.o), m(ASSETS.s)];
+        function getMaterial(id) {
+            const m = (t) => new THREE.MeshLambertMaterial({ map: t });
+            if(id === 0) return [m(TEXTURES.gs), m(TEXTURES.gs), m(TEXTURES.gt), m(TEXTURES.d), m(TEXTURES.gs), m(TEXTURES.gs)];
+            if(id === 1) return m(TEXTURES.s);
+            if(id === 2) return m(TEXTURES.w);
+            if(id === 3) return new THREE.MeshLambertMaterial({ map: TEXTURES.l, transparent: true, opacity: 0.9 });
+            return m(TEXTURES.s);
         }
 
         /** --- 2. ЯДРО ДВИЖКА --- **/
         let scene, camera, renderer, world = new Map(), clouds = [];
-        let isRunning = false, isFirstPerson = true, currentSlot = 0;
-        let myPos = new THREE.Vector3(0, 10, 0), vY = 0, myRot = 0, myPitch = 0;
-        let hand, steve, selectionBox, particles = [];
-        let joyId, camId, lastX, lastY, moveDir = {x:0, z:0};
-        let peer, connection;
+        let isGameRunning = false, isFP = true, activeSlot = 0;
+        let playerPos = new THREE.Vector3(0, 10, 0), velocityY = 0;
+        let rotationY = 0, rotationX = 0;
+        let handMesh, steveMesh, selectionMesh, particleGroup = [];
+        let joyState = {x:0, z:0}, touchData = {joyId: null, camId: null, lx: 0, ly: 0};
+        let peerInstance, networkConn;
 
-        function startEngine(mode) {
+        function initEngine(mode) {
             document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
             document.getElementById('ui-hud').style.display = 'block';
-            isRunning = true;
-            initWorld();
-            if(mode !== 'single') initNetwork(mode);
-        }
+            isGameRunning = true;
 
-        function initWorld() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.Fog(0x87ceeb, 20, 80);
+            scene.fog = new THREE.Fog(0x87ceeb, 20, 100);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            let sun = new THREE.DirectionalLight(0xffffff, 0.6);
-            sun.position.set(50, 100, 50);
+            // Освещение
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+            sun.position.set(20, 100, 10);
             scene.add(sun);
 
-            // Selection Box (Рамка выделения)
-            selectionBox = new THREE.Mesh(
+            // Рамка выделения (Selection Box)
+            selectionMesh = new THREE.Mesh(
                 new THREE.BoxGeometry(1.02, 1.02, 1.02),
-                new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, transparent: true, opacity: 0.4 })
+                new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, transparent: true, opacity: 0.5 })
             );
-            scene.add(selectionBox);
+            scene.add(selectionMesh);
 
-            // Генерация ландшафта
-            for(let x = -15; x <= 15; x++) {
-                for(let z = -15; z <= 15; z++) {
+            // Начальный мир
+            for(let x=-14; x<=14; x++) {
+                for(let z=-14; z<=14; z++) {
                     createBlock(x, 0, z, 0);
-                    if(Math.random() > 0.99) {
+                    if(Math.random() > 0.99) { // Деревья
                         for(let h=1; h<5; h++) createBlock(x, h, z, 2);
                         for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++) createBlock(x+i, 5, z+j, 3);
                     }
                 }
             }
 
-            // Облака
-            for(let i=0; i<15; i++) {
-                const cloud = new THREE.Mesh(new THREE.BoxGeometry(12, 1, 8), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.7}));
-                cloud.position.set(Math.random()*200-100, 35, Math.random()*200-100);
-                scene.add(cloud); clouds.push(cloud);
+            // Динамические облака
+            for(let i=0; i<20; i++) {
+                const c = new THREE.Mesh(new THREE.BoxGeometry(15, 1, 10), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.6}));
+                c.position.set(Math.random()*200-100, 40, Math.random()*200-100);
+                scene.add(c); clouds.push(c);
             }
 
-            steve = new THREE.Group();
-            steve.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.7, 0.3), new THREE.MeshLambertMaterial({color: 0x00aaff})));
-            scene.add(steve); steve.visible = false;
+            // Модель игрока и рука
+            steveMesh = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.8, 0.4), new THREE.MeshLambertMaterial({color: 0x00aaff}));
+            steveMesh.add(body); scene.add(steveMesh); steveMesh.visible = false;
 
-            hand = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.6), getBlockMat(0));
-            camera.add(hand); scene.add(camera);
-            hand.position.set(0.5, -0.5, -0.8);
+            handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.7), getMaterial(0));
+            camera.add(handMesh); scene.add(camera);
+            handMesh.position.set(0.6, -0.6, -0.9);
 
-            // Отрисовка иконок
-            [ASSETS.gs, ASSETS.s, ASSETS.w, ASSETS.l, ASSETS.o].forEach((t, i) => {
-                const ctx = document.getElementById('ic'+i).getContext('2d');
-                ctx.imageSmoothingEnabled = false; ctx.drawImage(t.image, 0,0,16,16,0,0,300,150);
+            // Рендер иконок хотбара
+            [TEXTURES.gt, TEXTURES.s, TEXTURES.w, TEXTURES.l, TEXTURES.gs].forEach((tex, i) => {
+                const ctx = document.getElementById('c'+i).getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(tex.image, 0, 0, 16, 16, 0, 0, 300, 150);
             });
 
-            setupInput();
-            mainLoop();
+            if(mode !== 'single') handleNetworking(mode);
+            
+            setupEventListeners();
+            requestAnimationFrame(gameLoop);
         }
 
         function createBlock(x, y, z, type) {
             const key = `${x},${y},${z}`;
             if(world.has(key)) return;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), getBlockMat(type));
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), getMaterial(type));
             b.position.set(x, y, z);
-            b.blockType = type;
-            scene.add(b); world.set(key, b);
+            b.typeId = type;
+            scene.add(b);
+            world.set(key, b);
         }
 
-        /** --- 3. ФИЗИКА И ПРОВЕРКА КОЛЛИЗИЙ (FIX JITTER) --- **/
-        function checkPhys(pos) {
-            const r = 0.28;
-            const checks = [
-                {x: pos.x-r, z: pos.z-r}, {x: pos.x+r, z: pos.z-r},
-                {x: pos.x-r, z: pos.z+r}, {x: pos.x+r, z: pos.z+r}
-            ];
-            for(let c of checks) {
-                const bx = Math.round(c.x), bz = Math.round(c.z);
-                if(world.has(`${bx},${Math.floor(pos.y+0.1)},${bz}`) || 
-                   world.has(`${bx},${Math.floor(pos.y+1.6)},${bz}`)) return true;
+        /** --- 3. ПРОФЕССИОНАЛЬНАЯ ФИЗИКА И КОЛЛИЗИИ --- **/
+        function checkCollision(pos) {
+            const radius = 0.25; // Компактный хитбокс для прохода в двери/узкие места
+            const heights = [0.2, 1.0, 1.6]; // Проверка на уровне ног, пояса и головы
+            
+            for(let h of heights) {
+                const points = [
+                    {x: pos.x - radius, z: pos.z - radius},
+                    {x: pos.x + radius, z: pos.z - radius},
+                    {x: pos.x - radius, z: pos.z + radius},
+                    {x: pos.x + radius, z: pos.z + radius}
+                ];
+                for(let p of points) {
+                    if(world.has(`${Math.round(p.x)},${Math.floor(pos.y + h)},${Math.round(p.z)}`)) return true;
+                }
             }
             return false;
         }
 
-        function mainLoop() {
-            requestAnimationFrame(mainLoop);
-            if(!isRunning) return;
+        function gameLoop() {
+            if(!isGameRunning) return;
+            requestAnimationFrame(gameLoop);
 
-            // Гравитация с "прилипанием" (Anti-Jitter)
-            vY -= 0.018;
-            let nextY = myPos.y + vY;
-            if(!checkPhys({x: myPos.x, y: nextY, z: myPos.z})) {
-                myPos.y = nextY;
+            // Гравитация и Snap-Y
+            velocityY -= 0.02;
+            let nextY = playerPos.y + velocityY;
+            if(!checkCollision({x: playerPos.x, y: nextY, z: playerPos.z})) {
+                playerPos.y = nextY;
             } else {
-                if(vY < 0) {
-                    vY = 0;
-                    myPos.y = Math.floor(myPos.y + 0.05); // Snap к поверхности
-                } else vY = 0;
+                if(velocityY < 0) {
+                    playerPos.y = Math.floor(playerPos.y + 0.01);
+                    velocityY = 0;
+                } else velocityY = 0;
             }
 
-            // Движение
-            let dx = moveDir.x * Math.cos(myRot) + moveDir.z * Math.sin(myRot);
-            let dz = moveDir.z * Math.cos(myRot) - moveDir.x * Math.sin(myRot);
-            if(!checkPhys({x: myPos.x + dx, y: myPos.y, z: myPos.z})) myPos.x += dx;
-            if(!checkPhys({x: myPos.x, y: myPos.y, z: myPos.z + dz})) myPos.z += dz;
+            // Движение с "мягким скольжением"
+            const speed = 0.13;
+            const dirX = (joyState.x * Math.cos(rotationY) + joyState.z * Math.sin(rotationY)) * speed;
+            const dirZ = (joyState.z * Math.cos(rotationY) - joyState.x * Math.sin(rotationY)) * speed;
 
-            // Частицы
-            for(let i=particles.length-1; i>=0; i--) {
-                const p = particles[i]; p.position.add(p.vel); p.vel.y -= 0.01; p.life -= 0.03;
-                p.scale.setScalar(p.life); if(p.life <= 0) { scene.remove(p); particles.splice(i,1); }
+            if(!checkCollision({x: playerPos.x + dirX, y: playerPos.y, z: playerPos.z})) playerPos.x += dirX;
+            if(!checkCollision({x: playerPos.x, y: playerPos.y, z: playerPos.z + dirZ})) playerPos.z += dirZ;
+
+            // Частицы разрушения
+            for(let i = particleGroup.length - 1; i >= 0; i--) {
+                const p = particleGroup[i];
+                p.position.add(p.vel);
+                p.vel.y -= 0.01;
+                p.life -= 0.03;
+                p.scale.setScalar(p.life);
+                if(p.life <= 0) { scene.remove(p); particleGroup.splice(i, 1); }
             }
 
             // Облака
-            clouds.forEach(c => { c.position.x += 0.02; if(c.position.x > 100) c.position.x = -100; });
+            clouds.forEach(cl => { cl.position.x += 0.03; if(cl.position.x > 100) cl.position.x = -100; });
 
-            // Raycaster для рамки выделения
+            // Raycaster для выделения блоков
             const ray = new THREE.Raycaster();
             ray.setFromCamera(new THREE.Vector2(0,0), camera);
             const hits = ray.intersectObjects(Array.from(world.values()));
             if(hits.length > 0) {
-                selectionBox.visible = true;
-                selectionBox.position.copy(hits[0].object.position);
-            } else selectionBox.visible = false;
+                selectionMesh.visible = true;
+                selectionMesh.position.copy(hits[0].object.position);
+            } else selectionMesh.visible = false;
 
-            // Камера
-            if(isFirstPerson) {
-                camera.position.set(myPos.x, myPos.y + 1.6, myPos.z);
-                camera.rotation.set(myPitch, myRot, 0, 'YXZ');
-                // Анимация руки
-                const swing = Math.sin(Date.now()*0.008) * 0.02 * (Math.abs(moveDir.x)*10 + Math.abs(moveDir.z)*10);
-                hand.position.y = -0.5 + swing;
+            // Камера и View Bobbing
+            if(isFP) {
+                const isMoving = Math.abs(joyState.x) > 0 || Math.abs(joyState.z) > 0;
+                const bob = isMoving ? Math.sin(Date.now() * 0.01) * 0.05 : 0;
+                camera.position.set(playerPos.x, playerPos.y + 1.6 + bob, playerPos.z);
+                camera.rotation.set(rotationX, rotationY, 0, 'YXZ');
+                handMesh.position.y = -0.6 + bob;
             } else {
-                steve.position.copy(myPos); steve.rotation.y = myRot;
-                camera.position.set(myPos.x - Math.sin(myRot)*4, myPos.y + 3, myPos.z - Math.cos(myRot)*4);
-                camera.lookAt(myPos.x, myPos.y + 1, myPos.z);
+                steveMesh.position.copy(playerPos);
+                steveMesh.rotation.y = rotationY;
+                camera.position.set(playerPos.x - Math.sin(rotationY)*4, playerPos.y + 3, playerPos.z - Math.cos(rotationY)*4);
+                camera.lookAt(playerPos.x, playerPos.y + 1, playerPos.z);
             }
 
-            document.getElementById('debug-text').innerText = `FPS: 60 | Y: ${myPos.y.toFixed(1)}`;
+            // Update UI
+            document.getElementById('coords').innerText = `${Math.floor(playerPos.x)}, ${Math.floor(playerPos.y)}, ${Math.floor(playerPos.z)}`;
             renderer.render(scene, camera);
         }
 
-        /** --- 4. ДЕЙСТВИЯ И ЧАСТИЦЫ --- **/
-        function spawnParts(pos, color) {
-            for(let i=0; i<10; i++) {
-                const p = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.15,0.15), new THREE.MeshBasicMaterial({color: 0x555555}));
-                p.position.copy(pos);
-                p.vel = new THREE.Vector3((Math.random()-0.5)*0.2, Math.random()*0.2, (Math.random()-0.5)*0.2);
-                p.life = 1.0; scene.add(p); particles.push(p);
-            }
-        }
+        /** --- 4. ИНТЕРАКЦИЯ И СЕТЬ --- **/
+        function handleInteraction(type) {
+            // Анимация удара
+            handMesh.rotation.x = -0.5;
+            setTimeout(() => handMesh.rotation.x = 0, 150);
 
-        function doAction(type) {
-            hand.rotation.x = -0.4; setTimeout(() => hand.rotation.x = 0, 100);
             const ray = new THREE.Raycaster();
             ray.setFromCamera(new THREE.Vector2(0,0), camera);
             const hits = ray.intersectObjects(Array.from(world.values()));
@@ -365,68 +375,84 @@
             if(hits.length > 0) {
                 const hit = hits[0];
                 const p = hit.object.position;
+
                 if(type === 'break' && p.y !== 0) {
-                    spawnParts(p);
-                    scene.remove(hit.object); world.delete(`${p.x},${p.y},${p.z}`);
-                    if(connection) connection.send({t:'b', x:p.x, y:p.y, z:p.z});
+                    // Создание частиц
+                    for(let i=0; i<12; i++) {
+                        const pt = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({color: 0x555555}));
+                        pt.position.copy(p);
+                        pt.vel = new THREE.Vector3((Math.random()-0.5)*0.25, Math.random()*0.3, (Math.random()-0.5)*0.25);
+                        pt.life = 1.0;
+                        scene.add(pt); particleGroup.push(pt);
+                    }
+                    scene.remove(hit.object);
+                    world.delete(`${p.x},${p.y},${p.z}`);
+                    if(networkConn) networkConn.send({action: 'break', x:p.x, y:p.y, z:p.z});
                 } else if(type === 'place') {
-                    const np = hit.point.add(hit.face.normal.multiplyScalar(0.5)).floor();
-                    createBlock(np.x, np.y, np.z, currentSlot);
-                    if(connection) connection.send({t:'p', x:np.x, y:np.y, z:np.z, s:currentSlot});
+                    const newPos = hit.point.add(hit.face.normal.multiplyScalar(0.5)).floor();
+                    createBlock(newPos.x, newPos.y, newPos.z, activeSlot);
+                    if(networkConn) networkConn.send({action: 'place', x:newPos.x, y:newPos.y, z:newPos.z, type:activeSlot});
                 }
             }
         }
 
-        /** --- 5. УПРАВЛЕНИЕ --- **/
-        function setupInput() {
+        function setupEventListeners() {
             window.addEventListener('pointerdown', e => {
-                if(e.target.closest('#top-bar') || e.target.closest('#hotbar') || e.target.closest('#action-btns')) return;
-                if(e.clientX < window.innerWidth/2) joyId = e.pointerId;
-                else { camId = e.pointerId; lastX = e.clientX; lastY = e.clientY; }
+                if(e.target.closest('#ui-hud > div:not(#viewport-overlay)')) return;
+                if(e.clientX < window.innerWidth / 2) touchData.joyId = e.pointerId;
+                else { touchData.camId = e.pointerId; touchData.lx = e.clientX; touchData.ly = e.clientY; }
             });
 
             window.addEventListener('pointermove', e => {
-                if(e.pointerId === joyId) {
-                    let dx = e.clientX - 120, dy = e.clientY - (window.innerHeight - 120);
-                    let d = Math.min(45, Math.sqrt(dx*dx+dy*dy)), a = Math.atan2(dy, dx);
-                    moveDir = { x: Math.cos(a)*(d/45)*0.18, z: Math.sin(a)*(d/45)*0.18 };
-                    document.getElementById('joy-stick').style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+                if(e.pointerId === touchData.joyId) {
+                    const centerX = 105, centerY = window.innerHeight - 105;
+                    const dx = e.clientX - centerX, dy = e.clientY - centerY;
+                    const dist = Math.min(40, Math.sqrt(dx*dx + dy*dy));
+                    const angle = Math.atan2(dy, dx);
+                    joyState = { x: Math.cos(angle)*(dist/40), z: Math.sin(angle)*(dist/40) };
+                    document.getElementById('joy-stick').style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
                 }
-                if(e.pointerId === camId) {
-                    myRot -= (e.clientX - lastX) * 0.007;
-                    myPitch = Math.max(-1.5, Math.min(1.5, myPitch - (e.clientY - lastY) * 0.007));
-                    lastX = e.clientX; lastY = e.clientY;
+                if(e.pointerId === touchData.camId) {
+                    rotationY -= (e.clientX - touchData.lx) * 0.007;
+                    rotationX = Math.max(-1.5, Math.min(1.5, rotationX - (e.clientY - touchData.ly) * 0.007));
+                    touchData.lx = e.clientX; touchData.ly = e.clientY;
                 }
             });
 
             window.addEventListener('pointerup', e => {
-                if(e.pointerId === joyId) { joyId = null; moveDir = {x:0, z:0}; document.getElementById('joy-stick').style.transform = 'none'; }
-                if(e.pointerId === camId) camId = null;
+                if(e.pointerId === touchData.joyId) { joyState = {x:0, z:0}; document.getElementById('joy-stick').style.transform = 'none'; touchData.joyId = null; }
+                if(e.pointerId === touchData.camId) touchData.camId = null;
             });
         }
 
-        /** --- 6. ДОПОЛНИТЕЛЬНО --- **/
-        function setSlot(i) { currentSlot = i; document.querySelectorAll('.slot').forEach(s => s.classList.remove('active')); document.querySelectorAll('.slot')[i].classList.add('active'); hand.material = getBlockMat(currentSlot); }
-        function doJump() { if(vY === 0) vY = 0.3; }
-        function gamePause(v) { isRunning = !v; document.getElementById('m-pause').style.display = v?'flex':'none'; }
-        function toggleView() { isFirstPerson = !isFirstPerson; steve.visible = !isFirstPerson; hand.visible = isFirstPerson; document.getElementById('view-mode').innerText = isFirstPerson?"1-ЛИЦО":"3-ЛИЦО"; }
-        function reqFS() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-        function resizeFix() { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); }
-        function toggleScreen(id) { document.querySelectorAll('.screen').forEach(s => s.style.display='none'); document.getElementById('m-'+id).style.display='flex'; }
+        /** --- 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- **/
+        function pickSlot(i) {
+            activeSlot = i;
+            document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.slot')[i].classList.add('active');
+            handMesh.material = getMaterial(activeSlot);
+        }
 
-        function initNetwork(m) {
-            const id = document.getElementById('room-id').value || '777';
-            peer = (m === 'host') ? new Peer('ac_v18_'+id) : new Peer();
-            peer.on('open', () => {
-                if(m === 'host') peer.on('connection', c => { connection = c; setupNet(); });
-                else { connection = peer.connect('ac_v18_'+id); setupNet(); }
+        function playerJump() { if(velocityY === 0) velocityY = 0.28; }
+        function setScreen(id) { document.querySelectorAll('.screen').forEach(s => s.style.display='none'); document.getElementById('m-'+id).style.display='flex'; }
+        function toggleFull() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+
+        function handleNetworking(mode) {
+            const id = document.getElementById('room-input').value || 'room777';
+            peerInstance = (mode === 'host') ? new Peer('annot_'+id) : new Peer();
+            peerInstance.on('open', () => {
+                if(mode === 'host') peerInstance.on('connection', c => { networkConn = c; syncNet(); });
+                else { networkConn = peerInstance.connect('annot_'+id); syncNet(); }
             });
         }
 
-        function setupNet() {
-            connection.on('data', d => {
-                if(d.t === 'b') { const b = world.get(`${d.x},${d.y},${d.z}`); if(b) { scene.remove(b); world.delete(`${d.x},${d.y},${d.z}`); } }
-                if(d.t === 'p') createBlock(d.x, d.y, d.z, d.s);
+        function syncNet() {
+            networkConn.on('data', data => {
+                if(data.action === 'break') {
+                    const b = world.get(`${data.x},${data.y},${data.z}`);
+                    if(b) { scene.remove(b); world.delete(`${data.x},${data.y},${data.z}`); }
+                }
+                if(data.action === 'place') createBlock(data.x, data.y, data.z, data.type);
             });
         }
     </script>
