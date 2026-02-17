@@ -3,56 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft Ultimate 2026</title>
+    <title>AnnotCraft Ultimate Platinum v25.0</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
-    <div id="vignette"></div>
+    <div id="render-canvas-container"></div>
+    <div id="vignette-overlay"></div>
 
     <div id="ui-hud">
-        <div id="stats-panel">
-            <div id="fps-counter">FPS: 60</div>
-            <div id="pos-counter">XYZ: 0, 0, 0</div>
+        <div id="debug-overlay">
+            <div class="stat-row">FPS: <span id="val-fps">60</span></div>
+            <div class="stat-row">POS: <span id="val-coords">0.0, 0.0, 0.0</span></div>
+            <div class="stat-row">CHUNK: <span id="val-chunk">0, 0</span></div>
+            <div class="stat-row">OBJECTS: <span id="val-obj">0</span></div>
         </div>
 
-        <div id="crosshair"></div>
+        <div id="crosshair-center"></div>
 
-        <div id="hotbar-container">
-            <div id="hotbar">
-                <div class="slot active" data-id="0"><canvas id="icon-0"></canvas></div>
-                <div class="slot" data-id="1"><canvas id="icon-1"></canvas></div>
-                <div class="slot" data-id="2"><canvas id="icon-2"></canvas></div>
-                <div class="slot" data-id="3"><canvas id="icon-3"></canvas></div>
-                <div class="slot" data-id="4"><canvas id="icon-4"></canvas></div>
-            </div>
+        <div id="inventory-bar">
+            <div class="hotbar-slot active" data-index="0" id="slot-0"><canvas id="icon-0"></canvas><span class="label">1</span></div>
+            <div class="hotbar-slot" data-index="1" id="slot-1"><canvas id="icon-1"></canvas><span class="label">2</span></div>
+            <div class="hotbar-slot" data-index="2" id="slot-2"><canvas id="icon-2"></canvas><span class="label">3</span></div>
+            <div class="hotbar-slot" data-index="3" id="slot-3"><canvas id="icon-3"></canvas><span class="label">4</span></div>
+            <div class="hotbar-slot" data-index="4" id="slot-4"><canvas id="icon-4"></canvas><span class="label">5</span></div>
         </div>
 
-        <div id="controls-wrapper">
-            <div id="joy-area">
-                <div id="joy-base">
-                    <div id="joy-stick"></div>
+        <div id="mobile-controls">
+            <div id="joystick-zone">
+                <div id="joystick-base">
+                    <div id="joystick-knob"></div>
                 </div>
             </div>
-            
-            <div id="actions-area">
-                <button class="act-btn" id="btn-place">PLACE</button>
-                <button class="act-btn" id="btn-break">BREAK</button>
-                <button class="act-btn jump" id="btn-jump">JUMP</button>
+            <div id="actions-zone">
+                <div class="action-btn" id="btn-place-block">PLACE</div>
+                <div class="action-btn" id="btn-break-block">BREAK</div>
+                <div class="action-btn jump-trigger" id="btn-jump-action">JUMP</div>
             </div>
         </div>
     </div>
 
-    <div id="screen-menu" class="overlay-screen">
-        <div class="mc-panel">
-            <h1 class="title">ANNOT CRAFT</h1>
-            <div class="menu-content">
-                <button class="mc-button" onclick="Core.start('single')">ОДИНОЧНЫЙ МИР</button>
-                <button class="mc-button" onclick="UI.toggle('multiplayer')">СЕТЕВАЯ ИГРА</button>
-                <button class="mc-button" onclick="Core.fullScreen()">ПОЛНЫЙ ЭКРАН</button>
+    <div id="game-menu" class="fullscreen-overlay">
+        <div class="menu-card">
+            <h1 class="game-logo">ANNOT CRAFT</h1>
+            <div class="menu-buttons">
+                <button class="menu-btn primary" onclick="GameEngine.launch('single')">SINGLEPLAYER</button>
+                <button class="menu-btn" onclick="GameEngine.launch('multi')">MULTIPLAYER</button>
+                <button class="menu-btn" onclick="Utils.toggleFullscreen()">FULLSCREEN</button>
             </div>
-            <p class="version">PLATINUM v21.4</p>
+            <div class="footer-info">PLATINUM EDITION v25.0 | 2026 build</div>
         </div>
     </div>
 
