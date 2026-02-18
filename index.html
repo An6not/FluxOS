@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft Ultimate Modular v26.0</title>
+    <title>AnnotCraft Ultimate</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="block.css">
+    <link rel="stylesheet" href="texture.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 </head>
 <body>
@@ -15,18 +16,17 @@
         <div id="debug-info">
             <div>FPS: <span id="fps-val">60</span></div>
             <div>XYZ: <span id="pos-val">0 / 0 / 0</span></div>
-            <div>BLOCKS: <span id="count-val">0</span></div>
         </div>
 
         <div id="crosshair"></div>
 
         <div id="hotbar-container">
             <div id="hotbar">
-                <div class="slot active" data-id="0" id="s0"><canvas id="c0"></canvas><span class="key">1</span></div>
-                <div class="slot" data-id="1" id="s1"><canvas id="c1"></canvas><span class="key">2</span></div>
-                <div class="slot" data-id="2" id="s2"><canvas id="c2"></canvas><span class="key">3</span></div>
-                <div class="slot" data-id="3" id="s3"><canvas id="c3"></canvas><span class="key">4</span></div>
-                <div class="slot" data-id="4" id="s4"><canvas id="c4"></canvas><span class="key">5</span></div>
+                <div class="slot active" data-id="0"><canvas id="c0"></canvas></div>
+                <div class="slot" data-id="1"><canvas id="c1"></canvas></div>
+                <div class="slot" data-id="2"><canvas id="c2"></canvas></div>
+                <div class="slot" data-id="3"><canvas id="c3"></canvas></div>
+                <div class="slot" data-id="4"><canvas id="c4"></canvas></div>
             </div>
         </div>
 
@@ -45,14 +45,13 @@
     <div id="screen-start" class="full-overlay">
         <div class="mc-panel">
             <h1 class="title">ANNOT CRAFT</h1>
-            <div class="buttons">
-                <button class="mc-btn" onclick="Main.start()">START WORLD</button>
-                <button class="mc-btn" onclick="Main.toggleFS()">FULLSCREEN</button>
-            </div>
+            <button class="mc-btn" onclick="Main.start()">START WORLD</button>
+            <button class="mc-btn" onclick="Main.toggleFS()">FULLSCREEN</button>
             <div class="ver">v26.0 | MODULAR STABLE</div>
         </div>
     </div>
 
+    <script src="Skin.js"></script>
     <script src="player.js"></script>
     <script src="game.js"></script>
     <script src="main.js"></script>
