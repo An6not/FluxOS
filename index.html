@@ -3,59 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AnnotCraft Ultimate Platinum v25.0</title>
+    <title>AnnotCraft Ultimate Modular v26.0</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="block.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
-    <div id="render-canvas-container"></div>
-    <div id="vignette-overlay"></div>
+    <div id="vignette"></div>
 
     <div id="ui-hud">
-        <div id="debug-overlay">
-            <div class="stat-row">FPS: <span id="val-fps">60</span></div>
-            <div class="stat-row">POS: <span id="val-coords">0.0, 0.0, 0.0</span></div>
-            <div class="stat-row">CHUNK: <span id="val-chunk">0, 0</span></div>
-            <div class="stat-row">OBJECTS: <span id="val-obj">0</span></div>
+        <div id="debug-info">
+            <div>FPS: <span id="fps-val">60</span></div>
+            <div>XYZ: <span id="pos-val">0 / 0 / 0</span></div>
+            <div>BLOCKS: <span id="count-val">0</span></div>
         </div>
 
-        <div id="crosshair-center"></div>
+        <div id="crosshair"></div>
 
-        <div id="inventory-bar">
-            <div class="hotbar-slot active" data-index="0" id="slot-0"><canvas id="icon-0"></canvas><span class="label">1</span></div>
-            <div class="hotbar-slot" data-index="1" id="slot-1"><canvas id="icon-1"></canvas><span class="label">2</span></div>
-            <div class="hotbar-slot" data-index="2" id="slot-2"><canvas id="icon-2"></canvas><span class="label">3</span></div>
-            <div class="hotbar-slot" data-index="3" id="slot-3"><canvas id="icon-3"></canvas><span class="label">4</span></div>
-            <div class="hotbar-slot" data-index="4" id="slot-4"><canvas id="icon-4"></canvas><span class="label">5</span></div>
+        <div id="hotbar-container">
+            <div id="hotbar">
+                <div class="slot active" data-id="0" id="s0"><canvas id="c0"></canvas><span class="key">1</span></div>
+                <div class="slot" data-id="1" id="s1"><canvas id="c1"></canvas><span class="key">2</span></div>
+                <div class="slot" data-id="2" id="s2"><canvas id="c2"></canvas><span class="key">3</span></div>
+                <div class="slot" data-id="3" id="s3"><canvas id="c3"></canvas><span class="key">4</span></div>
+                <div class="slot" data-id="4" id="s4"><canvas id="c4"></canvas><span class="key">5</span></div>
+            </div>
         </div>
 
-        <div id="mobile-controls">
-            <div id="joystick-zone">
-                <div id="joystick-base">
-                    <div id="joystick-knob"></div>
-                </div>
+        <div id="controls-layout">
+            <div id="movement-zone">
+                <div id="joy-base"><div id="joy-stick"></div></div>
             </div>
             <div id="actions-zone">
-                <div class="action-btn" id="btn-place-block">PLACE</div>
-                <div class="action-btn" id="btn-break-block">BREAK</div>
-                <div class="action-btn jump-trigger" id="btn-jump-action">JUMP</div>
+                <button class="btn-main" id="btn-place">PLACE</button>
+                <button class="btn-main" id="btn-break">BREAK</button>
+                <button class="btn-main btn-jump" id="btn-jump">JUMP</button>
             </div>
         </div>
     </div>
 
-    <div id="game-menu" class="fullscreen-overlay">
-        <div class="menu-card">
-            <h1 class="game-logo">ANNOT CRAFT</h1>
-            <div class="menu-buttons">
-                <button class="menu-btn primary" onclick="GameEngine.launch('single')">SINGLEPLAYER</button>
-                <button class="menu-btn" onclick="GameEngine.launch('multi')">MULTIPLAYER</button>
-                <button class="menu-btn" onclick="Utils.toggleFullscreen()">FULLSCREEN</button>
+    <div id="screen-start" class="full-overlay">
+        <div class="mc-panel">
+            <h1 class="title">ANNOT CRAFT</h1>
+            <div class="buttons">
+                <button class="mc-btn" onclick="Main.start()">START WORLD</button>
+                <button class="mc-btn" onclick="Main.toggleFS()">FULLSCREEN</button>
             </div>
-            <div class="footer-info">PLATINUM EDITION v25.0 | 2026 build</div>
+            <div class="ver">v26.0 | MODULAR STABLE</div>
         </div>
     </div>
 
+    <script src="player.js"></script>
+    <script src="game.js"></script>
     <script src="main.js"></script>
 </body>
 </html>
