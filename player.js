@@ -8,7 +8,7 @@ const Player = {
     input: { forward: 0, side: 0 },
     isGrounded: false,
     height: 1.7,
-    radius: 0.35,
+    radius: 0.3,
 
     init() {
         this.setupJoystick();
@@ -29,15 +29,19 @@ const Player = {
             const a = Math.atan2(dy, dx);
             
             stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-            this.input.forward = -Math.sin(a) * (d/50);
-            this.input.side = Math.cos(a) * (d/50);
+            
+            // Расчет направления движения
+            this.input.forward = -Math.sin(a + Math.PI/2) * (d/50);
+            this.input.side = Math.cos(a + Math.PI/2) * (d/50);
         };
 
         base.addEventListener('touchstart', move, {passive: false});
         base.addEventListener('touchmove', move, {passive: false});
-        base.addEventListener('touchend', () => {
+        base.addEventListener('touchend', (e) => {
+            e.preventDefault();
             stick.style.transform = '';
-            this.input.forward = 0; this.input.side = 0;
+            this.input.forward = 0; 
+            this.input.side = 0;
         });
     },
 
@@ -46,59 +50,64 @@ const Player = {
         window.addEventListener('touchmove', e => {
             const t = e.touches[0];
             if(t.clientX > window.innerWidth / 2) {
-                if(lx) {
-                    this.rot.y -= (t.clientX - lx) * 0.007;
-                    this.rot.x = Math.max(-1.5, Math.min(1.5, this.rot.x - (t.clientY - ly) * 0.007));
+                if(lx !== undefined) {
+                    this.rot.y -= (t.clientX - lx) * 0.008;
+                    this.rot.x = Math.max(-1.5, Math.min(1.5, this.rot.x - (t.clientY - ly) * 0.008));
                 }
                 lx = t.clientX; ly = t.clientY;
             }
         }, {passive: false});
-        window.addEventListener('touchend', () => { lx = null; ly = null; });
+        window.addEventListener('touchend', () => { lx = undefined; ly = undefined; });
     },
 
-    checkCollision(newPos, world) {
-        // Проверка ног, пояса и головы
-        const checks = [0.2, 0.9, 1.6]; 
-        for(let h of checks) {
-            const pts = [
-                {x: newPos.x-this.radius, z: newPos.z-this.radius},
-                {x: newPos.x+this.radius, z: newPos.z-this.radius},
-                {x: newPos.x-this.radius, z: newPos.z+this.radius},
-                {x: newPos.x+this.radius, z: newPos.z+this.radius}
-            ];
-            for(let p of pts) {
-                const k = `${Math.round(p.x)},${Math.floor(newPos.y + h)},${Math.round(p.z)}`;
-                if(world.has(k)) return true;
-            }
+    checkCollision(newPos, worldMap) {
+        if (!worldMap) return false;
+        // Проверка в двух точках по высоте
+        const levels = [0.2, 1.5]; 
+        for(let h of levels) {
+            const bx = Math.round(newPos.x);
+            const by = Math.floor(newPos.y + h);
+            const bz = Math.round(newPos.z);
+            if(worldMap.has(`${bx},${by},${bz}`)) return true;
         }
         return false;
     },
 
-    update(world) {
-        // Гравитация
-        this.vel.y -= 0.016;
+    update(worldMap) {
+        // Если мы в меню, физика игрока отключена
+        if (Main.isInMenu) return;
+
+        // 1. Гравитация
+        this.vel.y -= 0.015;
         let nextY = this.pos.y + this.vel.y;
         
-        if(!this.checkCollision({x: this.pos.x, y: nextY, z: this.pos.z}, world)) {
+        if(!this.checkCollision({x: this.pos.x, y: nextY, z: this.pos.z}, worldMap)) {
             this.pos.y = nextY;
             this.isGrounded = false;
         } else {
             if(this.vel.y < 0) {
-                this.pos.y = Math.floor(this.pos.y + 0.01);
+                this.pos.y = Math.round(this.pos.y);
                 this.isGrounded = true;
             }
             this.vel.y = 0;
         }
 
-        // Движение
-        const speed = 0.13;
+        // 2. Движение
+        const speed = 0.12;
         const dx = (this.input.forward * Math.sin(this.rot.y) + this.input.side * Math.cos(this.rot.y)) * speed;
         const dz = (this.input.forward * Math.cos(this.rot.y) - this.input.side * Math.sin(this.rot.y)) * speed;
 
-        if(!this.checkCollision({x: this.pos.x + dx, y: this.pos.y, z: this.pos.z}, world)) this.pos.x += dx;
-        if(!this.checkCollision({x: this.pos.x, y: this.pos.y, z: this.pos.z + dz}, world)) this.pos.z += dz;
+        if(!this.checkCollision({x: this.pos.x + dx, y: this.pos.y, z: this.pos.z}, worldMap)) {
+            this.pos.x += dx;
+        }
+        if(!this.checkCollision({x: this.pos.x, y: this.pos.y, z: this.pos.z + dz}, worldMap)) {
+            this.pos.z += dz;
+        }
 
-        // Провал в пустоту
-        if(this.pos.y < -20) this.pos.set(0, 15, 0);
+        // Телепорт при падении в бездну
+        if(this.pos.y < -10) { 
+            this.pos.set(0, 10, 0); 
+            this.vel.set(0,0,0); 
+        }
     }
 };
