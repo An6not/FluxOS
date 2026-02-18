@@ -17,93 +17,119 @@ const Player = {
         const base = document.getElementById('joy-base');
         const stick = document.getElementById('joy-stick');
 
-        base.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
+        base.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        }, {passive: false});
+
         base.addEventListener('touchmove', (e) => {
             e.preventDefault();
             const t = e.targetTouches[0];
             const r = base.getBoundingClientRect();
-            const cx = r.left + r.width/2;
-            const cy = r.top + r.height/2;
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
             const dx = t.clientX - cx;
             const dy = t.clientY - cy;
-            const d = Math.min(40, Math.sqrt(dx*dx + dy*dy));
+            const d = Math.min(40, Math.sqrt(dx * dx + dy * dy));
             const a = Math.atan2(dy, dx);
 
-            stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-            this.input.f = -Math.sin(a + Math.PI/2) * (d/40);
-            this.input.s = Math.cos(a + Math.PI/2) * (d/40);
+            stick.style.transform = `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d}px)`;
+            
+            // Векторы движения: f - вперед/назад, s - право/лево
+            this.input.f = -Math.sin(a + Math.PI / 2) * (d / 40);
+            this.input.s = Math.cos(a + Math.PI / 2) * (d / 40);
         }, {passive: false});
 
         base.addEventListener('touchend', () => {
             stick.style.transform = '';
-            this.input.f = 0; this.input.s = 0;
+            this.input.f = 0;
+            this.input.s = 0;
         });
     },
 
     setupLook() {
         let lx, ly;
         window.addEventListener('touchstart', (e) => {
-            for(let t of e.changedTouches) {
-                if(t.clientX > window.innerWidth / 2 && this.lookTouchId === null) {
+            for (let t of e.changedTouches) {
+                // Если нажатие в правой части экрана и мы еще не захватили палец для обзора
+                if (t.clientX > window.innerWidth / 2 && this.lookTouchId === null) {
                     this.lookTouchId = t.identifier;
-                    lx = t.clientX; ly = t.clientY;
+                    lx = t.clientX;
+                    ly = t.clientY;
                 }
             }
         });
 
         window.addEventListener('touchmove', (e) => {
-            for(let t of e.changedTouches) {
-                if(t.identifier === this.lookTouchId) {
+            for (let t of e.changedTouches) {
+                if (t.identifier === this.lookTouchId) {
                     const sens = 0.006;
                     this.rot.y -= (t.clientX - lx) * sens;
                     this.rot.x = Math.max(-1.5, Math.min(1.5, this.rot.x - (t.clientY - ly) * sens));
-                    lx = t.clientX; ly = t.clientY;
+                    lx = t.clientX;
+                    ly = t.clientY;
                 }
             }
         }, {passive: false});
 
         window.addEventListener('touchend', (e) => {
-            for(let t of e.changedTouches) {
-                if(t.identifier === this.lookTouchId) this.lookTouchId = null;
+            for (let t of e.changedTouches) {
+                if (t.identifier === this.lookTouchId) {
+                    this.lookTouchId = null;
+                }
             }
         });
     },
 
-    collide(newPos, world) {
-        const pts = [0.2, 1.6]; // Точки проверки: ноги и голова
-        for(let h of pts) {
-            const key = `${Math.round(newPos.x)},${Math.floor(newPos.y + h)},${Math.round(newPos.z)}`;
-            if(world.has(key)) return true;
+    collide(p, world) {
+        if (!world) return false;
+        // Проверяем 4 точки вокруг игрока (бокс коллизии) на двух уровнях высоты
+        const checkPoints = [0.2, 0.8, 1.6]; 
+        const r = this.radius;
+        const offsets = [
+            {x: 0, z: 0}, {x: r, z: 0}, {x: -r, z: 0}, {x: 0, z: r}, {x: 0, z: -r}
+        ];
+
+        for (let h of checkPoints) {
+            for (let off of offsets) {
+                const key = `${Math.round(p.x + off.x)},${Math.floor(p.y + h)},${Math.round(p.z + off.z)}`;
+                if (world.has(key)) return true;
+            }
         }
         return false;
     },
 
     update(world) {
-        if(Main.isInMenu) return;
+        if (Main.isInMenu) return;
 
         // Гравитация
         this.vel.y -= 0.015;
+        
+        // Движение по вертикали
         let nextY = this.pos.y + this.vel.y;
-
-        if(!this.collide({x: this.pos.x, y: nextY, z: this.pos.z}, world)) {
+        if (!this.collide({ x: this.pos.x, y: nextY, z: this.pos.z }, world)) {
             this.pos.y = nextY;
             this.isGrounded = false;
         } else {
-            if(this.vel.y < 0) {
+            if (this.vel.y < 0) {
                 this.isGrounded = true;
-                this.pos.y = Math.floor(this.pos.y + 0.1); // Мягкое приземление
+                this.pos.y = Math.floor(this.pos.y + 0.01); // Приземление
             }
             this.vel.y = 0;
         }
 
-        // Движение
-        const speed = 0.13;
+        // Движение по горизонтали
+        const speed = 0.12;
         const dx = (this.input.f * Math.sin(this.rot.y) + this.input.s * Math.cos(this.rot.y)) * speed;
         const dz = (this.input.f * Math.cos(this.rot.y) - this.input.s * Math.sin(this.rot.y)) * speed;
 
-        if(!this.collide({x: this.pos.x + dx, y: this.pos.y, z: this.pos.z}, world)) this.pos.x += dx;
-        if(!this.collide({x: this.pos.x, y: this.pos.y, z: this.pos.z + dz}, world)) this.pos.z += dz;
+        if (!this.collide({ x: this.pos.x + dx, y: this.pos.y, z: this.pos.z }, world)) {
+            this.pos.x += dx;
+        }
+        if (!this.collide({ x: this.pos.x, y: this.pos.y, z: this.pos.z + dz }, world)) {
+            this.pos.z += dz;
+        }
 
-        if(this.pos.y < -20) this.pos.set(0, 15, 0); // Спавн при падении
+        // Телепорт при падении
+        if (this.pos.y < -15) this.pos.set(0, 15, 0);
     }
 };
