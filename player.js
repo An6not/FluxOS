@@ -1,99 +1,96 @@
-const Player = {
-    pos: new THREE.Vector3(0, 5, 0),
-    vel: new THREE.Vector3(0, 0, 0),
-    rot: { x: 0, y: 0 },
-    input: { f: 0, s: 0 },
-    isGrounded: false,
-    height: 1.7,
-    radius: 0.3,
-    lookTouchId: null,
+class Player {
+    constructor(camera, scene) {
+        this.camera = camera;
+        this.scene = scene;
+        this.velocity = new THREE.Vector3();
+        this.moveDir = { forward: 0, side: 0 };
+        this.lookDelta = { x: 0, y: 0 };
+        this.onGround = false;
+        
+        // Мультитач данные
+        this.pointers = new Map();
+        
+        this.setupControls();
+        this.createModel();
+    }
 
-    init() {
-        this.setupJoystick();
-        this.setupLook();
-    },
+    createModel() {
+        // Простая моделька игрока (тело)
+        this.mesh = SkinManager.createSteve();
+        this.scene.add(this.mesh);
+    }
 
-    setupJoystick() {
-        const base = document.getElementById('joy-base');
-        const stick = document.getElementById('joy-stick');
-        base.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
-        base.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const t = e.targetTouches[0];
-            const r = base.getBoundingClientRect();
-            const dx = t.clientX - (r.left + r.width/2), dy = t.clientY - (r.top + r.height/2);
-            const d = Math.min(40, Math.sqrt(dx*dx + dy*dy)), a = Math.atan2(dy, dx);
-            stick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-            this.input.f = -Math.sin(a + Math.PI/2) * (d/40);
-            this.input.s = Math.cos(a + Math.PI/2) * (d/40);
-        }, {passive: false});
-        base.addEventListener('touchend', () => { stick.style.transform = ''; this.input.f = 0; this.input.s = 0; });
-    },
+    setupControls() {
+        const joyZone = document.getElementById('joystick-zone');
+        const stick = document.getElementById('joystick-stick');
 
-    setupLook() {
-        let lx, ly;
-        window.addEventListener('touchstart', (e) => {
-            for(let t of e.changedTouches) {
-                if(t.clientX > window.innerWidth / 2 && this.lookTouchId === null) {
-                    this.lookTouchId = t.identifier; lx = t.clientX; ly = t.clientY;
-                }
+        // Pointer Events для поддержки мультитач
+        window.addEventListener('pointerdown', (e) => {
+            this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!this.pointers.has(e.pointerId)) return;
+            
+            const prev = this.pointers.get(e.pointerId);
+            const dx = e.clientX - prev.x;
+            const dy = e.clientY - prev.y;
+
+            // Если касание в зоне джойстика
+            if (e.target.closest('#joystick-zone')) {
+                const limit = 40;
+                const dist = Math.min(Math.sqrt(dx*dx + dy*dy), limit);
+                const angle = Math.atan2(dy, dx);
+                
+                stick.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+                this.moveDir.forward = -Math.sin(angle) * (dist/limit);
+                this.moveDir.side = -Math.cos(angle) * (dist/limit);
+            } else {
+                // Вращение камеры
+                this.camera.rotation.y -= dx * 0.005;
+                this.camera.rotation.x -= dy * 0.005;
+                this.camera.rotation.x = Math.max(-1.5, Math.min(1.5, this.camera.rotation.x));
+            }
+            
+            this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            this.pointers.delete(e.pointerId);
+            if (e.target.closest('#joystick-zone')) {
+                stick.style.transform = `translate(0, 0)`;
+                this.moveDir.forward = 0;
+                this.moveDir.side = 0;
             }
         });
-        window.addEventListener('touchmove', (e) => {
-            for(let t of e.changedTouches) {
-                if(t.identifier === this.lookTouchId) {
-                    this.rot.y -= (t.clientX - lx) * 0.007;
-                    this.rot.x = Math.max(-1.5, Math.min(1.5, this.rot.x - (t.clientY - ly) * 0.007));
-                    lx = t.clientX; ly = t.clientY;
-                }
-            }
-        }, {passive: false});
-        window.addEventListener('touchend', (e) => {
-            for(let t of e.changedTouches) if(t.identifier === this.lookTouchId) this.lookTouchId = null;
-        });
-    },
 
-    // ПРОВЕРКА КОЛЛИЗИЙ (С ПОЛОМ И БЛОКАМИ)
-    check(p, world) {
-        // 1. Коллизия с бесконечным полом
-        if (p.y <= 0) return true;
+        document.getElementById('btn-jump').ontouchstart = () => {
+            if(this.onGround) this.velocity.y = 0.15;
+        };
+    }
 
-        // 2. Коллизия с установленными блоками
-        const gridX = Math.round(p.x);
-        const gridY = Math.floor(p.y);
-        const gridZ = Math.round(p.z);
-        
-        // Проверяем ноги и голову
-        if (world.has(`${gridX},${gridY},${gridZ}`)) return true;
-        if (world.has(`${gridX},${Math.floor(p.y + 1.6)},${gridZ}`)) return true;
+    update(dt, blocks) {
+        // Физика
+        this.velocity.y -= 0.008; 
+        this.camera.position.y += this.velocity.y;
 
-        return false;
-    },
-
-    update(world) {
-        if (Main.isInMenu) return;
-
-        this.vel.y -= 0.015; // Гравитация
-        
-        // Y-движение
-        let nextY = this.pos.y + this.vel.y;
-        if (!this.check({ x: this.pos.x, y: nextY, z: this.pos.z }, world)) {
-            this.pos.y = nextY;
-            this.isGrounded = false;
+        if (this.camera.position.y < 2) {
+            this.camera.position.y = 2;
+            this.velocity.y = 0;
+            this.onGround = true;
         } else {
-            if (this.vel.y < 0) {
-                this.isGrounded = true;
-                this.pos.y = Math.max(0, this.pos.y); // Не даем упасть ниже пола
-            }
-            this.vel.y = 0;
+            this.onGround = false;
         }
 
-        // XZ-движение (ходьба)
-        const speed = 0.12;
-        const dx = (this.input.f * Math.sin(this.rot.y) + this.input.s * Math.cos(this.rot.y)) * speed;
-        const dz = (this.input.f * Math.cos(this.rot.y) - this.input.s * Math.sin(this.rot.y)) * speed;
+        // Движение
+        const angle = this.camera.rotation.y;
+        this.camera.position.x += (Math.sin(angle) * this.moveDir.forward + Math.cos(angle) * this.moveDir.side) * 0.1;
+        this.camera.position.z += (Math.cos(angle) * this.moveDir.forward - Math.sin(angle) * this.moveDir.side) * 0.1;
 
-        if (!this.check({ x: this.pos.x + dx, y: this.pos.y, z: this.pos.z }, world)) this.pos.x += dx;
-        if (!this.check({ x: this.pos.x, y: this.pos.y, z: this.pos.z + dz }, world)) this.pos.z += dz;
+        // Синхронизация модельки (сетка игрока)
+        if(this.mesh) {
+            this.mesh.position.set(this.camera.position.x, this.camera.position.y - 1.5, this.camera.position.z);
+            this.mesh.rotation.y = this.camera.rotation.y;
+        }
     }
-};
+}

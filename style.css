@@ -1,11 +1,43 @@
-body, html { 
-    margin: 0; padding: 0; width: 100%; height: 100%; 
-    overflow: hidden; background: #000; touch-action: none;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    -webkit-user-select: none; user-select: none;
+body { margin: 0; touch-action: none; background: #000; font-family: sans-serif; }
+canvas { display: block; }
+
+#ui-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 1000;
+    display: flex; justify-content: center; align-items: center;
 }
-canvas { display: block; width: 100%; height: 100%; }
-#vignette {
-    position: absolute; inset: 0; pointer-events: none; z-index: 50;
-    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.4) 150%);
+
+.panel {
+    background: #333; padding: 30px; border: 4px solid #000;
+    text-align: center; color: white; display: flex; flex-direction: column; gap: 15px;
+}
+
+input { padding: 12px; border: none; background: #eee; }
+button { padding: 12px; background: #55a855; color: white; border: none; cursor: pointer; font-weight: bold; }
+
+#game-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#crosshair { 
+    position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; 
+    border: 2px solid white; transform: translate(-50%, -50%); 
+}
+
+#joystick-zone {
+    position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px;
+    background: rgba(255,255,255,0.1); border-radius: 50%; pointer-events: auto;
+}
+
+#joystick-base { width: 100%; height: 100%; position: relative; }
+#joystick-stick {
+    position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
+    background: white; border-radius: 50%; transition: transform 0.1s;
+}
+
+#action-bar {
+    position: absolute; bottom: 40px; right: 40px; display: flex; gap: 20px; pointer-events: auto;
+}
+
+.action-btn {
+    width: 70px; height: 70px; background: rgba(255,255,255,0.2);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: bold; user-select: none;
 }

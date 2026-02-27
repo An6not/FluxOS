@@ -3,361 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft HTML5 Edition</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Courier New', Courier, monospace; }
-        canvas { display: block; }
-
-        /* Интерфейс меню */
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            z-index: 100;
-        }
-
-        .menu-box {
-            background: #444;
-            padding: 20px;
-            border: 4px solid #000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        input, button {
-            padding: 10px;
-            font-size: 16px;
-            border: 2px solid #222;
-            outline: none;
-        }
-
-        button {
-            cursor: pointer;
-            background: #666;
-            color: white;
-            text-transform: uppercase;
-        }
-
-        button:active { background: #333; }
-
-        /* Мобильное управление */
-        #mobile-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 150px;
-            height: 150px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            display: none; /* Включится при старте */
-            touch-action: none;
-        }
-
-        #joystick {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 50px;
-            height: 50px;
-            background: rgba(255,255,255,0.5);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        #action-buttons {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .action-btn {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-            user-select: none;
-        }
-
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            border: 2px solid white;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-    </style>
+    <title>Minecraft JS - Multiplay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="block.css">
+    <link rel="stylesheet" href="texture.css">
 </head>
 <body>
-
-    <div id="ui-layer">
-        <div class="menu-box" id="login-form">
-            <h2>MINECRAFT ONLINE</h2>
-            <input type="text" id="server-name" placeholder="Название комнаты">
-            <input type="password" id="server-pass" placeholder="Пароль (для хоста: 1488)">
-            <button onclick="startGame()">Войти / Создать</button>
+    <div id="ui-overlay">
+        <div id="menu" class="panel">
+            <h1>MINECRAFT JS</h1>
+            <input type="text" id="node-name" placeholder="Название комнаты">
+            <input type="password" id="node-pass" placeholder="Пароль хоста">
+            <button id="btn-start">ВОЙТИ / СОЗДАТЬ</button>
+            <button id="btn-fullscreen">ПОЛНЫЙ ЭКРАН</button>
         </div>
     </div>
 
-    <div id="crosshair"></div>
-
-    <div id="mobile-controls">
-        <div id="joystick"></div>
-    </div>
-
-    <div id="action-buttons">
-        <div class="action-btn" id="btn-jump">JUMP</div>
-        <div class="action-btn" id="btn-build">BUILD</div>
-        <div class="action-btn" id="btn-dig">DIG</div>
+    <div id="game-ui" style="display: none;">
+        <div id="crosshair"></div>
+        <div id="joystick-zone">
+            <div id="joystick-base">
+                <div id="joystick-stick"></div>
+            </div>
+        </div>
+        <div id="action-bar">
+            <div class="action-btn" id="btn-jump">JUMP</div>
+            <div class="action-btn" id="btn-action">BLOCK</div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <script>
-        /**
-         * MINECRAFT ENGINE CONFIG
-         */
-        const CONFIG = {
-            GRAVITY: 0.008,
-            JUMP_FORCE: 0.15,
-            SPEED: 0.1,
-            SENSITIVITY: 0.002,
-            HOST_PASS: "1488"
-        };
-
-        let scene, camera, renderer, clock;
-        let player = {
-            velocity: new THREE.Vector3(),
-            onGround: false,
-            mesh: null
-        };
-        
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let blocks = [];
-        let isGameRunning = false;
-
-        // Инициализация игры
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB);
-            scene.fog = new THREE.FogExp2(0x87CEEB, 0.02);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            document.body.appendChild(renderer.domElement);
-
-            clock = new THREE.Clock();
-
-            // Свет
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-            
-            const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            sunLight.position.set(50, 100, 50);
-            scene.add(sunLight);
-
-            generateWorld();
-
-            // Установка камеры
-            camera.position.set(16, 5, 16);
-
-            setupControls();
-            animate();
-        }
-
-        // Генерация простого мира
-        function generateWorld() {
-            const loader = new THREE.TextureLoader();
-            // Используем заглушки цветов вместо текстур для скорости загрузки
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
-            
-            for (let x = 0; x < 32; x++) {
-                for (let z = 0; z < 32; z++) {
-                    const h = Math.floor(Math.random() * 2) + 1; // Неровности пола
-                    for(let y = 0; y < h; y++) {
-                        const material = new THREE.MeshLambertMaterial({ 
-                            color: y === h-1 ? 0x228B22 : 0x8B4513 
-                        });
-                        const cube = new THREE.Mesh(geometry, material);
-                        cube.position.set(x, y, z);
-                        scene.add(cube);
-                        blocks.push(cube);
-                    }
-                }
-            }
-        }
-
-        // Управление
-        function setupControls() {
-            // Keyboard
-            document.addEventListener('keydown', (e) => {
-                switch(e.code) {
-                    case 'KeyW': moveForward = true; break;
-                    case 'KeyS': moveBackward = true; break;
-                    case 'KeyA': moveLeft = true; break;
-                    case 'KeyD': moveRight = true; break;
-                    case 'Space': if(player.onGround) player.velocity.y = CONFIG.JUMP_FORCE; break;
-                }
-            });
-            document.addEventListener('keyup', (e) => {
-                switch(e.code) {
-                    case 'KeyW': moveForward = false; break;
-                    case 'KeyS': moveBackward = false; break;
-                    case 'KeyA': moveLeft = false; break;
-                    case 'KeyD': moveRight = false; break;
-                }
-            });
-
-            // Мышь (Look around)
-            document.addEventListener('mousemove', (e) => {
-                if (document.pointerLockElement === document.body) {
-                    camera.rotation.y -= e.movementX * CONFIG.SENSITIVITY;
-                    camera.rotation.x -= e.movementY * CONFIG.SENSITIVITY;
-                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
-                }
-            });
-
-            // Мобильный джойстик (Touch)
-            const joystick = document.getElementById('mobile-controls');
-            joystick.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const rect = joystick.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                
-                let diffX = touch.clientX - centerX;
-                let diffY = touch.clientY - centerY;
-                
-                moveForward = diffY < -20;
-                moveBackward = diffY > 20;
-                moveLeft = diffX < -20;
-                moveRight = diffX > 20;
-            });
-
-            joystick.addEventListener('touchend', () => {
-                moveForward = moveBackward = moveLeft = moveRight = false;
-            });
-
-            // Кнопки действий
-            document.getElementById('btn-jump').addEventListener('touchstart', () => {
-                if(player.onGround) player.velocity.y = CONFIG.JUMP_FORCE;
-            });
-            
-            document.getElementById('btn-dig').addEventListener('touchstart', performAction);
-            document.getElementById('btn-build').addEventListener('touchstart', () => performAction(true));
-        }
-
-        function performAction(isBuild = false) {
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-            const intersects = raycaster.intersectObjects(blocks);
-
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-                if (isBuild) {
-                    const pos = intersect.object.position.clone().add(intersect.face.normal);
-                    const geometry = new THREE.BoxGeometry(1, 1, 1);
-                    const material = new THREE.MeshLambertMaterial({ color: 0x888888 });
-                    const cube = new THREE.Mesh(geometry, material);
-                    cube.position.copy(pos);
-                    scene.add(cube);
-                    blocks.push(cube);
-                } else {
-                    scene.remove(intersect.object);
-                    blocks = blocks.filter(b => b !== intersect.object);
-                }
-            }
-        }
-
-        function startGame() {
-            const name = document.getElementById('server-name').value;
-            const pass = document.getElementById('server-pass').value;
-
-            if(!name) { alert("Введите название комнаты!"); return; }
-            
-            // Логика хоста
-            if(pass === CONFIG.HOST_PASS) {
-                console.log(`Server "${name}" started as HOST`);
-            } else {
-                console.log(`Joined to "${name}" as GUEST`);
-            }
-
-            document.getElementById('ui-layer').style.display = 'none';
-            document.getElementById('mobile-controls').style.display = 'block';
-            document.getElementById('action-buttons').style.display = 'flex';
-            
-            // Захват курсора для ПК
-            if(!('ontouchstart' in window)) {
-                document.body.requestPointerLock();
-            }
-
-            isGameRunning = true;
-            init();
-        }
-
-        function animate() {
-            if(!isGameRunning) return;
-            requestAnimationFrame(animate);
-
-            const delta = clock.getDelta();
-
-            // Гравитация и физика
-            player.velocity.y -= CONFIG.GRAVITY;
-            camera.position.y += player.velocity.y;
-
-            if (camera.position.y < 2.5) {
-                camera.position.y = 2.5;
-                player.velocity.y = 0;
-                player.onGround = true;
-            } else {
-                player.onGround = false;
-            }
-
-            // Перемещение
-            const direction = new THREE.Vector3();
-            const frontVector = new THREE.Vector3(0, 0, Number(moveBackward) - Number(moveForward));
-            const sideVector = new THREE.Vector3(Number(moveLeft) - Number(moveRight), 0, 0);
-
-            direction.subVectors(frontVector, sideVector).normalize().multiplyScalar(CONFIG.SPEED).applyEuler(camera.rotation);
-            
-            camera.position.x += direction.x;
-            camera.position.z += direction.z;
-
-            renderer.render(scene, camera);
-        }
-
-        // Адаптация экрана
-        window.addEventListener('resize', () => {
-            if(camera) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-        });
-
-    </script>
+    <script src="textures.js"></script>
+    <script src="Skin.js"></script>
+    <script src="player.js"></script>
+    <script src="host.js"></script>
+    <script src="game.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
