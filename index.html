@@ -1,43 +1,57 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft JS - Multiplay</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="block.css">
-    <link rel="stylesheet" href="texture.css">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>OriginWEB OS</title>
+
+<link rel="stylesheet" href="style.css">
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+<!-- GSAP Flip -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js"></script>
+
+<!-- Lucide -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<!-- OGL -->
+<script src="https://cdn.jsdelivr.net/npm/ogl@0.0.32/dist/ogl.min.js"></script>
+
 </head>
+
 <body>
-    <div id="ui-overlay">
-        <div id="menu" class="panel">
-            <h1>MINECRAFT JS</h1>
-            <input type="text" id="node-name" placeholder="Название комнаты">
-            <input type="password" id="node-pass" placeholder="Пароль хоста">
-            <button id="btn-start">ВОЙТИ / СОЗДАТЬ</button>
-            <button id="btn-fullscreen">ПОЛНЫЙ ЭКРАН</button>
-        </div>
-    </div>
 
-    <div id="game-ui" style="display: none;">
-        <div id="crosshair"></div>
-        <div id="joystick-zone">
-            <div id="joystick-base">
-                <div id="joystick-stick"></div>
-            </div>
-        </div>
-        <div id="action-bar">
-            <div class="action-btn" id="btn-jump">JUMP</div>
-            <div class="action-btn" id="btn-action">BLOCK</div>
-        </div>
-    </div>
+<div id="phone-shell">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="textures.js"></script>
-    <script src="Skin.js"></script>
-    <script src="player.js"></script>
-    <script src="host.js"></script>
-    <script src="game.js"></script>
-    <script src="main.js"></script>
+<div id="dynamic-island"></div>
+
+<div id="os-layer">
+
+<div id="wallpaper"></div>
+
+<div id="apps-grid"></div>
+
+<div id="app-container"></div>
+
+<div id="dock">
+
+<canvas id="liquid-canvas"></canvas>
+
+<div id="dock-icons"></div>
+
+</div>
+
+<div id="home-bar"></div>
+
+</div>
+
+</div>
+
+<script src="main.js"></script>
+
 </body>
 </html>

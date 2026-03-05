@@ -1,43 +1,299 @@
-body { margin: 0; touch-action: none; background: #000; font-family: sans-serif; }
-canvas { display: block; }
+:root{
 
-#ui-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); z-index: 1000;
-    display: flex; justify-content: center; align-items: center;
+--glass:rgba(255,255,255,0.1);
+--blur:blur(20px);
+--icon-size:64px;
+
 }
 
-.panel {
-    background: #333; padding: 30px; border: 4px solid #000;
-    text-align: center; color: white; display: flex; flex-direction: column; gap: 15px;
+body{
+
+background:#111;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+height:100vh;
+
+font-family:system-ui;
+
 }
 
-input { padding: 12px; border: none; background: #eee; }
-button { padding: 12px; background: #55a855; color: white; border: none; cursor: pointer; font-weight: bold; }
+/* PHONE FRAME */
 
-#game-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-#crosshair { 
-    position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; 
-    border: 2px solid white; transform: translate(-50%, -50%); 
+#phone-shell{
+
+width:360px;
+aspect-ratio:19.5/9;
+
+background:#000;
+
+border-radius:3rem;
+
+border:8px solid #111;
+
+position:relative;
+
+overflow:hidden;
+
+box-shadow:0 30px 80px rgba(0,0,0,0.7);
+
 }
 
-#joystick-zone {
-    position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px;
-    background: rgba(255,255,255,0.1); border-radius: 50%; pointer-events: auto;
+#dynamic-island{
+
+position:absolute;
+
+top:10px;
+left:50%;
+
+transform:translateX(-50%);
+
+width:120px;
+height:30px;
+
+background:#000;
+
+border-radius:2rem;
+
+z-index:20;
+
 }
 
-#joystick-base { width: 100%; height: 100%; position: relative; }
-#joystick-stick {
-    position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
-    background: white; border-radius: 50%; transition: transform 0.1s;
+/* OS */
+
+#os-layer{
+
+position:absolute;
+
+inset:0;
+
+overflow:hidden;
+
 }
 
-#action-bar {
-    position: absolute; bottom: 40px; right: 40px; display: flex; gap: 20px; pointer-events: auto;
+/* WALLPAPER */
+
+#wallpaper{
+
+position:absolute;
+inset:-40px;
+
+background-image:url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee");
+
+background-size:cover;
+background-position:center;
+
+transition:transform 0.2s;
+
 }
 
-.action-btn {
-    width: 70px; height: 70px; background: rgba(255,255,255,0.2);
-    border-radius: 10px; display: flex; align-items: center; justify-content: center;
-    color: white; font-weight: bold; user-select: none;
+/* APPS GRID */
+
+#apps-grid{
+
+position:absolute;
+
+top:80px;
+
+left:0;
+right:0;
+
+display:grid;
+
+grid-template-columns:repeat(4,1fr);
+
+gap:20px;
+
+padding:20px;
+
+z-index:2;
+
+}
+
+.app-icon{
+
+display:flex;
+flex-direction:column;
+align-items:center;
+
+color:white;
+
+font-size:12px;
+
+cursor:pointer;
+
+}
+
+.icon-box{
+
+width:var(--icon-size);
+height:var(--icon-size);
+
+border-radius:18px;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+}
+
+/* APP FULLSCREEN */
+
+#app-container{
+
+position:absolute;
+
+inset:0;
+
+z-index:5;
+
+pointer-events:none;
+
+}
+
+.app-window{
+
+position:absolute;
+
+inset:0;
+
+display:flex;
+flex-direction:column;
+
+padding:30px;
+
+color:white;
+
+}
+
+/* DOCK */
+
+#dock{
+
+position:absolute;
+
+bottom:30px;
+left:50%;
+
+transform:translateX(-50%);
+
+width:80%;
+height:80px;
+
+border-radius:28px;
+
+background:rgba(255,255,255,0.08);
+
+backdrop-filter:blur(20px) saturate(180%);
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+}
+
+#dock-icons{
+
+display:flex;
+
+gap:18px;
+
+z-index:3;
+
+}
+
+.dock-icon{
+
+width:56px;
+height:56px;
+
+border-radius:16px;
+
+background:rgba(255,255,255,0.15);
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+color:white;
+
+cursor:pointer;
+
+}
+
+/* LIQUID CANVAS */
+
+#liquid-canvas{
+
+position:absolute;
+
+inset:0;
+
+width:100%;
+height:100%;
+
+pointer-events:none;
+
+}
+
+/* HOME BAR */
+
+#home-bar{
+
+position:absolute;
+
+bottom:6px;
+
+left:50%;
+
+transform:translateX(-50%);
+
+width:140px;
+height:5px;
+
+border-radius:3px;
+
+background:white;
+
+opacity:0.8;
+
+}
+
+/* MUSIC APP */
+
+.music-ui{
+
+display:flex;
+flex-direction:column;
+
+align-items:center;
+gap:20px;
+
+}
+
+.album{
+
+width:200px;
+height:200px;
+
+border-radius:20px;
+
+background:#fff3;
+
+}
+
+.play-btn{
+
+padding:12px 30px;
+
+border-radius:20px;
+
+background:white;
+
+color:black;
+
+cursor:pointer;
+
 }
