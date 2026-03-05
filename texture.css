@@ -1,7 +1,0 @@
-/* Пикселизация для текстур инвентаря */
-.slot {
-    image-rendering: pixelated;
-    background-size: 80% 80%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
