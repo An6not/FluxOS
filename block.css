@@ -1,6 +1,0 @@
-/* Логика коллизий и стилей блоков (заглушка для будущих CSS-блоков) */
-.block-highlight {
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    position: absolute;
-    pointer-events: none;
-}
