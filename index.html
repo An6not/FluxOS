@@ -3,114 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS Ultimate Online</title>
+    <title>FluxOS V3 Triple Online</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg: #000;
-            --accent: #007aff;
-            --p1: #ff3b30; --p2: #34c759; --p3: #ffcc00;
-            --card: rgba(20, 20, 20, 0.9);
-            --border: rgba(255, 255, 255, 0.1);
+            --bg: #05070a;
+            --accent: #2f81f7;
+            --p1: #f85149; --p2: #3fb950; --p3: #d29922;
+            --card: #0d1117;
+            --brd: #30363d;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui; user-select: none; }
-        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; display: flex; justify-content: center; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; user-select: none; }
+        body { background: var(--bg); color: #c9d1d9; height: 100vh; overflow: hidden; display: flex; justify-content: center; }
 
-        .app { width: 100%; max-width: 420px; padding: 20px; display: flex; flex-direction: column; position: relative; }
+        .app { width: 100%; max-width: 450px; padding: 20px; display: flex; flex-direction: column; position: relative; }
 
-        /* ANIMATIONS */
-        .btn-tap { transition: 0.1s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .btn-tap:active { transform: scale(0.92); filter: brightness(1.4); }
+        /* FLUID ANIMATIONS */
+        .tap { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .tap:active { transform: scale(0.94); filter: brightness(1.2); }
 
-        .scr-anim { animation: scrIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        @keyframes scrIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .glass { background: var(--card); border: 1px solid var(--brd); border-radius: 24px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
 
-        .glass { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 24px; backdrop-filter: blur(20px); }
-
-        /* INPUTS */
         input { 
-            width: 100%; padding: 18px; border-radius: 16px; background: #111; border: 1px solid var(--border); 
-            color: #fff; font-size: 16px; margin-bottom: 12px; transition: 0.3s;
+            width: 100%; padding: 18px; border-radius: 14px; background: #010409; border: 1px solid var(--brd); 
+            color: #fff; font-size: 16px; margin-bottom: 15px; outline: none;
         }
         input:focus { border-color: var(--accent); }
 
-        .btn { padding: 18px; border-radius: 16px; border: none; font-weight: 700; width: 100%; text-align: center; }
-        .btn-blue { background: var(--accent); color: white; }
-        .btn-gray { background: #222; color: #aaa; border: 1px solid var(--border); }
-        .btn-active { border: 2px solid var(--accent) !important; color: white !important; background: rgba(0, 122, 255, 0.1); }
+        .btn { padding: 18px; border-radius: 14px; border: none; font-weight: 700; width: 100%; font-size: 15px; }
+        .btn-blue { background: var(--accent); color: white; box-shadow: 0 5px 15px rgba(47, 129, 247, 0.3); }
+        .btn-dark { background: #21262d; color: #fff; border: 1px solid var(--brd); }
+        .btn-sel { border: 2px solid var(--accent) !important; background: rgba(47, 129, 247, 0.1); }
 
         /* LOBBY */
-        .host-id { font-size: 40px; font-weight: 900; color: var(--accent); text-align: center; letter-spacing: 5px; margin: 15px 0; }
-        .p-tag { display: flex; align-items: center; gap: 10px; padding: 12px; background: #1a1a1a; border-radius: 12px; margin-bottom: 8px; border: 1px solid transparent; }
-        .p-tag.me { border-color: var(--accent); }
+        .id-box { font-size: 42px; font-weight: 900; color: var(--accent); text-align: center; letter-spacing: 6px; margin: 10px 0; }
+        .p-row { display: flex; align-items: center; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 10px; border: 1px solid transparent; animation: slide 0.3s ease; }
+        @keyframes slide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .p-row.me { border-color: var(--accent); background: rgba(47, 129, 247, 0.05); }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
 
         /* BOARD */
-        .board { display: grid; gap: 8px; background: #1a1a1a; padding: 8px; border-radius: 20px; width: 100%; }
+        .board { display: grid; gap: 6px; background: var(--brd); padding: 6px; border-radius: 18px; width: 100%; }
         .cell { 
-            aspect-ratio: 1/1; background: #000; border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900;
+            aspect-ratio: 1/1; background: var(--bg); border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;
             transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .cell.pop { transform: scale(1.1); }
+        .cell.active-pop { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.1); }
         .cell.p1 { color: var(--p1); } .cell.p2 { color: var(--p2); } .cell.p3 { color: var(--p3); }
         
-        .cell.coin { border-radius: 50%; }
+        .cell.coin { border-radius: 50%; border: 3px solid rgba(255,255,255,0.05); }
         .cell.coin.p1 { background: var(--p1); box-shadow: 0 0 15px var(--p1); }
         .cell.coin.p2 { background: var(--p2); box-shadow: 0 0 15px var(--p2); }
         .cell.coin.p3 { background: var(--p3); box-shadow: 0 0 15px var(--p3); }
 
         .hidden { display: none !important; }
-        .status { text-align: center; color: var(--accent); font-weight: 700; min-height: 24px; margin: 15px 0; }
+        .status-bar { text-align: center; color: var(--accent); font-weight: 800; margin: 15px 0; min-height: 20px; text-transform: uppercase; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <div id="scr-auth" class="glass scr-anim" style="margin-top:auto; margin-bottom:auto;">
-        <h1 style="text-align:center; margin-bottom:20px;">FluxOS <span style="color:var(--accent)">P2P</span></h1>
-        <input type="text" id="in-nick" placeholder="Твой ник">
-        <button class="btn btn-blue btn-tap" onclick="App.start(true)">СОЗДАТЬ ХОСТ</button>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <input type="number" id="in-id" placeholder="Код" style="margin-bottom:0; flex:1">
-            <button class="btn btn-gray btn-tap" style="flex:1" onclick="App.start(false)">ВОЙТИ</button>
+    <div id="scr-auth" class="glass" style="margin-top:auto; margin-bottom:auto;">
+        <h1 style="text-align:center; margin-bottom:25px; letter-spacing:-1px;">FluxOS <span style="color:var(--accent)">V3</span></h1>
+        <input type="text" id="nick" placeholder="Имя игрока">
+        <button class="btn btn-blue tap" onclick="App.init(true)">СОЗДАТЬ ХОСТ</button>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+            <input type="number" id="join-id" placeholder="Код" style="margin-bottom:0; flex:1">
+            <button class="btn btn-dark tap" style="flex:1" onclick="App.init(false)">ВОЙТИ</button>
         </div>
     </div>
 
-    <div id="scr-lobby" class="hidden glass scr-anim">
-        <p style="text-align:center; font-size:10px; opacity:0.5">КОД ПОДКЛЮЧЕНИЯ</p>
-        <div class="host-id" id="show-id">000000</div>
+    <div id="scr-lobby" class="hidden glass">
+        <p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">ID КОМНАТЫ</p>
+        <div class="id-box" id="id-view">000000</div>
         
-        <div id="p-list" style="margin:20px 0"></div>
+        <div id="players" style="margin:20px 0"></div>
 
-        <div id="ui-host" class="hidden">
-            <p style="font-size:10px; margin-bottom:10px">ВЫБЕРИ ИГРУ:</p>
+        <div id="host-panel" class="hidden">
+            <p style="font-size:10px; margin-bottom:10px; opacity:0.6;">ВЫБОР РЕЖИМА:</p>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:15px;">
-                <button class="btn btn-gray btn-tap" id="m-ttt" onclick="App.mode('ttt')">3X3</button>
-                <button class="btn btn-gray btn-tap" id="m-c4" onclick="App.mode('c4')">7X6</button>
-                <button class="btn btn-gray btn-tap" id="m-rps" onclick="App.mode('rps')">КНБ</button>
+                <button class="btn btn-dark tap" id="m-ttt" onclick="App.setMode('ttt')">6X6</button>
+                <button class="btn btn-dark tap" id="m-c4" onclick="App.setMode('c4')">7X6</button>
+                <button class="btn btn-dark tap" id="m-rps" onclick="App.setMode('rps')">КНБ</button>
             </div>
-            <button class="btn btn-blue btn-tap" id="start-btn" onclick="Net.launch()">ЗАПУСТИТЬ</button>
+            <button class="btn btn-blue tap" id="go-btn" onclick="Net.broadcastStart()">ЗАПУСТИТЬ</button>
         </div>
         
-        <div id="ui-guest" class="hidden" style="text-align:center; padding:10px">
-            <p class="status">Ожидание выбора хоста...</p>
+        <div id="guest-panel" class="hidden" style="text-align:center; padding:10px">
+            <div class="status-bar">Ожидание игроков и хоста...</div>
         </div>
     </div>
 
-    <div id="scr-game" class="hidden scr-anim" style="height:100%; display:flex; flex-direction:column">
-        <div style="display:flex; gap:10px; margin-bottom:15px">
-            <div id="stat-0" class="p-tag" style="flex:1"><b>P1</b>: <span id="sc-0">0</span></div>
-            <div id="stat-1" class="p-tag" style="flex:1"><b>P2</b>: <span id="sc-1">0</span></div>
-            <div id="stat-2" class="p-tag hidden" style="flex:1"><b>P3</b>: <span id="sc-2">0</span></div>
+    <div id="scr-game" class="hidden" style="height:100%; display:flex; flex-direction:column">
+        <div style="display:flex; gap:8px; margin-bottom:15px">
+            <div id="pl-0" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:12px;"><b>P1</b>: <span id="sc-0">0</span></div>
+            <div id="pl-1" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:12px;"><b>P2</b>: <span id="sc-1">0</span></div>
+            <div id="pl-2" class="p-row hidden" style="flex:1; margin-bottom:0; padding:10px; font-size:12px;"><b>P3</b>: <span id="sc-2">0</span></div>
         </div>
-        <div class="status" id="game-msg">ЗАГРУЗКА...</div>
+        <div class="status-bar" id="game-info">Синхронизация...</div>
         <div style="flex:1; display:flex; align-items:center; justify-content:center">
             <div id="board" class="board"></div>
         </div>
-        <div style="display:flex; gap:10px; margin-top:20px">
-            <button class="btn btn-gray btn-tap" onclick="location.reload()">ВЫЙТИ</button>
-            <button id="re-btn" class="btn btn-blue btn-tap hidden" onclick="Net.launch()">РЕВАНШ</button>
+        <div style="display:flex; gap:10px; margin-top:20px; padding-bottom:10px">
+            <button class="btn btn-dark tap" onclick="location.reload()">МЕНЮ</button>
+            <button id="re-btn" class="btn btn-blue tap hidden" onclick="Net.broadcastStart()">РЕВАНШ</button>
         </div>
     </div>
 </div>
@@ -118,59 +116,70 @@
 <script>
     const Net = {
         peer: null, conns: [], conn: null, isHost: true, players: [], myIdx: 0,
-        init(id) {
+        
+        async setup(id) {
             return new Promise(res => {
-                this.peer = new Peer('flx-' + id);
+                // Префикс для защиты от коллизий
+                this.peer = new Peer('FLUX-OS-V3-' + id);
                 this.peer.on('open', res);
-                this.peer.on('connection', c => this.setupConn(c));
-                this.peer.on('error', () => { alert("Ошибка! Попробуйте другой ID"); location.reload(); });
+                this.peer.on('connection', c => {
+                    this.conns.push(c);
+                    c.on('data', d => this.onData(d, c));
+                });
+                this.peer.on('error', e => {
+                    alert("Этот код уже занят или ошибка сети. Попробуйте другой.");
+                    location.reload();
+                });
             });
         },
-        setupConn(c) {
-            this.conns.push(c);
-            c.on('data', d => this.handleData(d, c));
-        },
-        handleData(d, c) {
+
+        onData(d, c) {
             if(this.isHost) {
-                if(d.type === 'HELLO') {
+                if(d.type === 'JOIN') {
+                    if(this.players.length >= 3) return;
                     this.players.push({name: d.name, idx: this.players.length});
-                    this.sync(); App.updLobby();
+                    this.broadcast({type: 'LOBBY', p: this.players});
+                    App.renderLobby();
                 }
-                if(d.type === 'TAP') Engine.move(d.i, d.p);
+                if(d.type === 'TAP') Engine.handleMove(d.i, d.p);
             } else {
-                if(d.type === 'SYNC') {
+                if(d.type === 'LOBBY') {
                     this.players = d.p;
                     this.myIdx = this.players.findIndex(x => x.name === App.nick);
-                    App.updLobby();
+                    App.renderLobby();
                 }
                 if(d.type === 'START') {
-                    App.gMode = d.m; Engine.state = d.s;
-                    App.scr('scr-game'); Engine.draw();
+                    App.mode = d.m; Engine.state = d.s;
+                    App.show('scr-game'); Engine.render();
                 }
-                if(d.type === 'UP') { Engine.state = d.s; Engine.draw(); }
+                if(d.type === 'SYNC') { Engine.state = d.s; Engine.render(); }
             }
         },
-        sync() { this.conns.forEach(c => c.send({type: 'SYNC', p: this.players})); },
-        launch() {
+
+        broadcast(data) { this.conns.forEach(c => c.send(data)); },
+        
+        broadcastStart() {
             Engine.init();
-            const pkg = {type: 'START', m: App.gMode, s: Engine.state};
-            this.conns.forEach(c => c.send(pkg));
-            App.scr('scr-game'); Engine.draw();
+            this.broadcast({type: 'START', m: App.mode, s: Engine.state});
+            App.show('scr-game'); Engine.render();
         }
     };
 
     const Engine = {
         state: { grid: [], turn: 0, scores: [0,0,0], active: false, msg: '' },
+
         init() {
             const num = Net.players.length;
             this.state.active = true; this.state.turn = 0; this.state.msg = '';
-            let size = App.gMode === 'c4' ? 42 : (num === 3 ? 36 : 9);
+            // 3 игрока = 6x6 поле (36), 2 игрока = 3x3 (9)
+            let size = App.mode === 'c4' ? 42 : (num === 3 ? 36 : 9);
             this.state.grid = Array(size).fill(null);
         },
-        move(i, p) {
+
+        handleMove(i, p) {
             if(!this.state.active || this.state.turn !== p) return;
             let ok = false;
-            if(App.gMode === 'c4') {
+            if(App.mode === 'c4') {
                 let col = i % 7;
                 for(let r=5; r>=0; r--) {
                     if(this.state.grid[r*7+col] === null) { this.state.grid[r*7+col] = p; ok = true; break; }
@@ -178,90 +187,104 @@
             } else {
                 if(this.state.grid[i] === null) { this.state.grid[i] = p; ok = true; }
             }
+
             if(ok) {
-                if(this.check(p)) { this.state.active = false; this.state.scores[p]++; this.state.msg = "ПОБЕДА: " + Net.players[p].name; }
-                else { this.state.turn = (this.state.turn + 1) % Net.players.length; }
-                Net.conns.forEach(c => c.send({type: 'UP', s: this.state}));
-                this.draw();
+                if(this.checkWin(p)) {
+                    this.state.active = false; this.state.scores[p]++;
+                    this.state.msg = "ПОБЕДА: " + Net.players[p].name;
+                } else {
+                    this.state.turn = (this.state.turn + 1) % Net.players.length;
+                }
+                Net.broadcast({type: 'SYNC', s: this.state});
+                this.render();
             }
         },
-        check(p) {
-            const g = this.state.grid; const sz = App.gMode === 'c4' ? 7 : Math.sqrt(g.length);
-            const win = App.gMode === 'c4' ? 4 : (Net.players.length === 3 ? 4 : 3);
+
+        checkWin(p) {
+            const g = this.state.grid; const sz = App.mode === 'c4' ? 7 : Math.sqrt(g.length);
+            const win = App.mode === 'c4' ? 4 : (Net.players.length === 3 ? 4 : 3);
             for(let i=0; i<g.length; i++) {
                 if(g[i] !== p) continue;
                 for(let [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
-                    let c = 1;
-                    for(let s=1; s<win; s++) {
-                        let r = Math.floor(i/sz)+dr*s, col = (i%sz)+dc*s;
-                        if(r>=0 && r<(g.length/sz) && col>=0 && col<sz && g[r*sz+col] === p) c++; else break;
+                    let count = 1;
+                    for(let step=1; step<win; step++) {
+                        let r = Math.floor(i/sz)+dr*step, col = (i%sz)+dc*step;
+                        if(r>=0 && r<(g.length/sz) && col>=0 && col<sz && g[r*sz+col] === p) count++; else break;
                     }
-                    if(c === win) return true;
+                    if(count === win) return true;
                 }
-            } return false;
+            }
+            return false;
         },
-        draw() {
+
+        render() {
             const b = document.getElementById('board');
-            const cols = App.gMode === 'c4' ? 7 : Math.sqrt(this.state.grid.length);
+            const cols = App.mode === 'c4' ? 7 : Math.sqrt(this.state.grid.length);
             b.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             b.innerHTML = '';
+
             this.state.grid.forEach((v, i) => {
                 const c = document.createElement('div');
-                c.className = `cell btn-tap ${App.gMode === 'c4' ? 'coin' : ''}`;
+                c.className = `cell tap ${App.mode === 'c4' ? 'coin' : ''}`;
                 if(v !== null) {
-                    c.classList.add('p' + (v+1), 'pop');
-                    if(App.gMode !== 'c4') c.innerText = v === 0 ? 'X' : (v === 1 ? 'O' : '∆');
+                    c.classList.add('p' + (v+1), 'active-pop');
+                    if(App.mode !== 'c4') c.innerText = v === 0 ? 'X' : (v === 1 ? 'O' : '∆');
                 }
                 c.onclick = () => {
-                    if(Net.isHost) Engine.move(i, Net.myIdx);
+                    if(Net.isHost) Engine.handleMove(i, Net.myIdx);
                     else Net.conn.send({type: 'TAP', i, p: Net.myIdx});
                 };
                 b.appendChild(c);
             });
-            document.getElementById('game-msg').innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ТВОЙ ХОД" : "ЖДЕМ...");
+
+            document.getElementById('game-info').innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ТВОЙ ХОД" : `ХОД: ${Net.players[this.state.turn]?.name}`);
             Net.players.forEach((p, i) => {
-                document.getElementById('sc-' + i).innerText = this.state.scores[i];
-                document.getElementById('stat-' + i).classList.toggle('me', this.state.turn === i && this.state.active);
+                document.getElementById('sc-'+i).innerText = this.state.scores[i];
+                document.getElementById('pl-'+i).classList.toggle('me', this.state.turn === i && this.state.active);
             });
             document.getElementById('re-btn').classList.toggle('hidden', this.state.active || !Net.isHost);
         }
     };
 
     const App = {
-        nick: '', gMode: 'ttt',
-        async start(host) {
-            this.nick = document.getElementById('in-nick').value || 'User';
+        nick: '', mode: 'ttt',
+        async init(host) {
+            this.nick = document.getElementById('nick').value || 'User' + Math.floor(Math.random()*99);
             Net.isHost = host;
-            const id = host ? Math.floor(100000 + Math.random()*900000).toString() : document.getElementById('in-id').value;
-            await Net.init(id);
-            document.getElementById('show-id').innerText = id;
+            const code = host ? Math.floor(100000 + Math.random()*900000).toString() : document.getElementById('join-id').value;
+            
+            await Net.setup(code);
+            document.getElementById('id-view').innerText = code;
+            
             if(host) {
                 Net.players = [{name: this.nick, idx: 0}];
-                document.getElementById('ui-host').classList.remove('hidden');
+                document.getElementById('host-panel').classList.remove('hidden');
             } else {
-                Net.conn = Net.peer.connect('flx-' + id);
+                Net.conn = Net.peer.connect('FLUX-OS-V3-' + code);
                 Net.conn.on('open', () => {
-                    Net.conn.send({type: 'HELLO', name: this.nick});
-                    document.getElementById('ui-guest').classList.remove('hidden');
+                    Net.conn.send({type: 'JOIN', name: this.nick});
+                    document.getElementById('guest-panel').classList.remove('hidden');
                 });
             }
-            this.updLobby(); this.scr('scr-lobby'); this.mode('ttt');
+            this.renderLobby();
+            this.show('scr-lobby');
+            this.setMode('ttt');
         },
-        mode(m) {
-            this.gMode = m;
-            document.querySelectorAll('#ui-host .btn').forEach(b => b.classList.remove('btn-active'));
-            document.getElementById('m-' + m).classList.add('btn-active');
+        setMode(m) {
+            this.mode = m;
+            document.querySelectorAll('#host-panel .btn').forEach(b => b.classList.remove('btn-sel'));
+            document.getElementById('m-' + m).classList.add('btn-sel');
         },
-        updLobby() {
-            document.getElementById('p-list').innerHTML = Net.players.map(p => `
-                <div class="p-tag ${p.name === this.nick ? 'me' : ''}">
-                    <div style="width:10px;height:10px;border-radius:50%;background:var(--p${p.idx+1})"></div>
-                    <b>${p.name}</b>
+        renderLobby() {
+            document.getElementById('players').innerHTML = Net.players.map(p => `
+                <div class="p-row ${p.name === this.nick ? 'me' : ''}">
+                    <div class="dot" style="background:var(--p${p.idx+1})"></div>
+                    <b>${p.name}</b> ${p.name === this.nick ? '(ВЫ)' : ''}
                 </div>
             `).join('');
-            if(Net.isHost) document.getElementById('start-btn').innerText = Net.players.length > 1 ? "ЗАПУСТИТЬ" : "ИГРАТЬ С БОТОМ";
+            if(Net.isHost) document.getElementById('go-btn').innerText = Net.players.length > 1 ? "ЗАПУСТИТЬ НА " + Net.players.length : "ЖДЕМ ИГРОКОВ...";
         },
-        scr(id) {
+        show(id) {
             document.querySelectorAll('.app > div').forEach(d => d.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
