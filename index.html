@@ -3,696 +3,483 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS P2P Hub</title>
+    <title>FluxOS Ultimate GameHub</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg-color: #030712;
-            --glass-bg: rgba(255, 255, 255, 0.03);
+            --bg: #030712;
+            --glass: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.08);
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.4);
-            --x-color: #ef4444;
-            --o-color: #10b981;
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
-            --radius-lg: 24px;
-            --radius-md: 16px;
+            --accent: #38bdf8;
+            --p1: #f43f5e;
+            --p2: #10b981;
+            --p3: #f59e0b;
+            --text: #f1f5f9;
+            --radius: 20px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'SF Pro Display', system-ui; -webkit-tap-highlight-color: transparent; user-select: none; }
 
         body {
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
-            color: var(--text-main);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .app-container {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            animation: fluidFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes fluidFadeIn {
-            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        h1 { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
-        .subtitle { color: var(--text-muted); font-size: 14px; font-weight: 500; }
-
-        /* Сетка игр */
-        .mode-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .mode-card {
-            padding: 16px;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            position: relative;
+            background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent),
+                              radial-gradient(circle at bottom left, rgba(244, 63, 94, 0.05), transparent);
             overflow: hidden;
         }
 
-        .mode-card::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            transition: 0.5s;
-        }
+        .viewport { width: 100%; max-width: 500px; margin: 0 auto; padding: 15px; flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 
-        .mode-card:active { transform: scale(0.94); }
-        .mode-card.active { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
-        
-        .mode-icon { font-size: 24px; margin-bottom: 8px; }
-        .mode-title { font-size: 15px; font-weight: 700; }
-        .mode-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .glass { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: var(--radius); }
 
-        /* Сетевой блок */
-        .network-panel {
-            padding: 20px;
-            margin-bottom: 20px;
-        }
+        /* Lobby */
+        .header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 28px; font-weight: 900; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        .pin-display {
-            font-size: 36px;
-            font-weight: 900;
-            letter-spacing: 8px;
-            color: var(--accent);
-            text-align: center;
-            text-shadow: 0 0 20px var(--accent-glow);
-            margin: 10px 0;
-            font-family: monospace;
-        }
+        .player-selector { display: flex; gap: 8px; margin-bottom: 15px; }
+        .sel-btn { flex: 1; padding: 12px; border-radius: 12px; background: var(--glass); border: 1px solid var(--glass-border); color: #94a3b8; font-weight: 700; cursor: pointer; }
+        .sel-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
-        .input-glass {
-            width: 100%;
-            background: rgba(0,0,0,0.2);
-            border: 1px solid var(--glass-border);
-            padding: 16px;
-            border-radius: var(--radius-md);
-            color: white;
-            font-size: 20px;
-            text-align: center;
-            letter-spacing: 4px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
+        .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .game-card { padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .game-card.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.1); }
+        .game-card i { font-size: 24px; display: block; margin-bottom: 5px; }
+        .game-card span { font-size: 13px; font-weight: 600; }
 
-        .input-glass:focus { border-color: var(--accent); }
+        .net-info { padding: 20px; text-align: center; margin-top: auto; }
+        .pin-display { font-size: 32px; font-weight: 900; color: var(--accent); letter-spacing: 4px; margin: 10px 0; }
 
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border-radius: var(--radius-md);
-            border: none;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 12px;
-        }
+        input { width: 100%; padding: 14px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #fff; text-align: center; font-size: 18px; margin-bottom: 10px; outline: none; }
+        .btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--accent); color: var(--bg); }
 
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 4px 15px var(--accent-glow);
-        }
+        /* Game UI */
+        .score-row { display: flex; gap: 8px; margin-bottom: 15px; }
+        .score-item { flex: 1; padding: 10px; border-radius: 12px; text-align: center; font-size: 12px; border-bottom: 3px solid transparent; }
+        .score-item b { display: block; font-size: 18px; }
 
-        .btn-primary:active { transform: scale(0.97); background: #2563eb; }
+        .board { display: grid; gap: 6px; margin: 0 auto; width: 100%; }
+        .cell { aspect-ratio: 1/1; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; transition: 0.2s; }
+        .cell.p1 { color: var(--p1); }
+        .cell.p2 { color: var(--p2); }
+        .cell.p3 { color: var(--p3); }
+        .cell.coin { border-radius: 50%; }
+        .cell.coin.p1 { background: var(--p1); }
+        .cell.coin.p2 { background: var(--p2); }
+        .cell.coin.p3 { background: var(--p3); }
+        .cell.fading { opacity: 0.3; filter: grayscale(1); }
 
-        .btn-secondary {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--glass-border);
-        }
-
-        /* Игровое пространство */
-        .game-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px 0;
-            width: 100%;
-        }
-
-        .status-bar {
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 24px;
-            transition: all 0.3s;
-        }
-
-        /* Универсальная сетка */
-        .board {
-            display: grid;
-            gap: 8px;
-            width: 100%;
-            max-width: 380px;
-        }
-
-        .cell {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(24px, 8vw, 42px);
-            font-weight: 900;
-            aspect-ratio: 1/1;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        .cell:active { transform: scale(0.9); background: rgba(255,255,255,0.08); }
-        .cell.x { color: var(--x-color); text-shadow: 0 0 15px rgba(239, 68, 68, 0.4); animation: stamp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2); }
-        .cell.o { color: var(--o-color); text-shadow: 0 0 15px rgba(16, 185, 129, 0.4); animation: stamp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2); }
-        .cell.fading { opacity: 0.2; filter: blur(2px); }
-        .cell.win { background: rgba(255,255,255,0.15); border-color: #fff; }
-
-        @keyframes stamp {
-            0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
-            100% { transform: scale(1) rotate(0); opacity: 1; }
-        }
-
-        /* Коннект 4 */
-        .cell.coin-x { background: var(--x-color); border-radius: 50%; box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3); }
-        .cell.coin-o { background: var(--o-color); border-radius: 50%; box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3); }
-
-        /* Reaction & Clicker UI */
-        .action-pad {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.1s;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-        }
-        
-        .action-pad:active { transform: scale(0.95); }
-        .pad-red { background: var(--x-color); color: white; }
-        .pad-green { background: var(--o-color); color: white; box-shadow: 0 0 40px var(--o-color); }
-        .pad-blue { background: var(--accent); color: white; box-shadow: 0 0 40px var(--accent); }
-
-        .score-board { display: flex; justify-content: space-between; width: 100%; max-width: 300px; margin-top: 20px; font-size: 20px; font-weight: bold; }
+        #reaction-zone { width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; border-radius: var(--radius); cursor: pointer; }
 
         .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    
-    <div id="screen-lobby">
-        <div class="header">
-            <h1>FluxOS Hub</h1>
-            <div class="subtitle">Secure P2P Connection</div>
+<div class="viewport">
+    <div id="scr-lobby" class="fade-in">
+        <div class="header"><h1>FluxOS P2P Ultimate</h1></div>
+
+        <div class="player-selector glass">
+            <button class="sel-btn active" id="sel-2" onclick="App.setPlayers(2)">2 Игрока</button>
+            <button class="sel-btn" id="sel-3" onclick="App.setPlayers(3)">3 Игрока</button>
         </div>
 
-        <div class="mode-grid">
-            <div class="mode-card glass active" onclick="Network.setMode('classic')" id="card-classic">
-                <div class="mode-icon">⚔️</div>
-                <div class="mode-title">Classic</div>
-                <div class="mode-desc">3x3 Tic-Tac-Toe</div>
-            </div>
-            <div class="mode-card glass" onclick="Network.setMode('ghost')" id="card-ghost">
-                <div class="mode-icon">👻</div>
-                <div class="mode-title">Ghost Mode</div>
-                <div class="mode-desc">Ходы исчезают</div>
-            </div>
-            <div class="mode-card glass" onclick="Network.setMode('connect4')" id="card-connect4">
-                <div class="mode-icon">👇</div>
-                <div class="mode-title">Connect 4</div>
-                <div class="mode-desc">Гравитация (7x6)</div>
-            </div>
-            <div class="mode-card glass" onclick="Network.setMode('reaction')" id="card-reaction">
-                <div class="mode-icon">⚡</div>
-                <div class="mode-title">Reaction</div>
-                <div class="mode-desc">Кто быстрее?</div>
-            </div>
+        <div class="game-grid">
+            <div class="game-card glass active" onclick="App.setMode('ttt')" id="m-ttt"><i>⭕</i><span>Крестики</span></div>
+            <div class="game-card glass" onclick="App.setMode('ghost')" id="m-ghost"><i>👻</i><span>Призрак</span></div>
+            <div class="game-card glass" onclick="App.setMode('c4')" id="m-c4"><i>🔴</i><span>Connect 4</span></div>
+            <div class="game-card glass" onclick="App.setMode('mem')" id="m-mem"><i>🃏</i><span>Память</span></div>
+            <div class="game-card glass" onclick="App.setMode('rps')" id="m-rps"><i>✌️</i><span>К.Н.Б.</span></div>
+            <div class="game-card glass" onclick="App.setMode('react')" id="m-react"><i>⚡</i><span>Реакция</span></div>
         </div>
 
-        <div class="network-panel glass">
-            <p style="text-align: center; color: var(--text-muted); font-size: 13px;">ТВОЙ СЕКРЕТНЫЙ PIN</p>
-            <div class="pin-display" id="my-pin">------</div>
-            
-            <div style="margin-top: 24px;">
-                <input type="number" id="join-pin" class="input-glass" placeholder="PIN ДРУГА" inputmode="numeric">
-                <button class="btn btn-primary" onclick="Network.connect()">ПОДКЛЮЧИТЬСЯ</button>
-            </div>
+        <div class="net-info glass">
+            <p style="font-size: 11px; color: #94a3b8;">ВАШ ID ДЛЯ ПОДКЛЮЧЕНИЯ</p>
+            <div class="pin-display" id="my-id">------</div>
+            <input type="number" id="target-id" placeholder="ВВЕДИТЕ ID ХОСТА" inputmode="numeric">
+            <button class="btn btn-primary" onclick="Net.connect()">ВОЙТИ В ХОББИ</button>
         </div>
     </div>
 
-    <div id="screen-game" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
-        <button class="btn btn-secondary" style="width: fit-content; padding: 8px 16px;" onclick="Network.disconnect()">← Покинуть лобби</button>
-        
-        <div class="game-area">
-            <div id="status-bar" class="status-bar glass">Ожидание синхронизации...</div>
-            
-            <div id="board" class="board hidden"></div>
-
-            <div id="action-area" class="hidden" style="display: flex; flex-direction: column; align-items: center;">
-                <div id="action-pad" class="action-pad pad-blue" onclick="ActionGame.handlePress()">ЖДАТЬ</div>
-                <div class="score-board">
-                    <div>Ты: <span id="score-me">0</span></div>
-                    <div>Враг: <span id="score-opp">0</span></div>
-                </div>
-            </div>
+    <div id="scr-game" class="hidden fade-in">
+        <div class="score-row">
+            <div class="score-item glass" style="border-color: var(--p1)">P1<b id="s-1">0</b></div>
+            <div class="score-item glass" style="border-color: var(--p2)">P2<b id="s-2">0</b></div>
+            <div id="s-box-3" class="score-item glass hidden" style="border-color: var(--p3)">P3<b id="s-3">0</b></div>
         </div>
 
-        <button id="btn-restart" class="btn btn-primary hidden" onclick="Engine.requestRestart()">ИГРАТЬ СНОВА</button>
-    </div>
+        <div id="status" class="glass" style="padding: 12px; text-align: center; font-weight: 700; margin-bottom: 15px; font-size: 14px;">Ожидание...</div>
 
+        <div id="game-arena" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
+            <div id="board-root" class="board"></div>
+            <div id="reaction-zone" class="hidden">ЖДИ...</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn glass" onclick="location.reload()" style="flex: 1;">ВЫХОД</button>
+            <button id="btn-restart" class="btn btn-primary hidden" onclick="App.restart()" style="flex: 2;">ЗАНОВО</button>
+        </div>
+    </div>
 </div>
 
 <script>
     /**
-     * CORE ENGINE
-     * Industrial P2P State Machine
+     * NETWORK ORCHESTRATOR
      */
-
-    // Haptic Feedback Helper
-    const haptic = (pattern) => { if (navigator.vibrate) navigator.vibrate(pattern); };
-
-    const State = {
-        peer: null, conn: null, pin: '',
-        mode: 'classic', role: 'X', // 'X' (Host) or 'O' (Client)
-        board: [], active: false, turn: 'X',
-        history: [], scoreMe: 0, scoreOpp: 0
-    };
-
-    const UI = {
-        lobby: document.getElementById('screen-lobby'),
-        game: document.getElementById('screen-game'),
-        pinDisplay: document.getElementById('my-pin'),
-        joinInput: document.getElementById('join-pin'),
-        board: document.getElementById('board'),
-        actionBar: document.getElementById('action-area'),
-        actionPad: document.getElementById('action-pad'),
-        status: document.getElementById('status-bar'),
-        restartBtn: document.getElementById('btn-restart'),
-        
-        showScreen(id) {
-            this.lobby.classList.add('hidden');
-            this.game.classList.add('hidden');
-            document.getElementById(`screen-${id}`).classList.remove('hidden');
-        },
-        setStatus(text, color = 'var(--text-main)') {
-            this.status.innerText = text;
-            this.status.style.color = color;
-            this.status.style.borderColor = color;
-        }
-    };
-
-    /** NETWORK MODULE */
-    const Network = {
+    const Net = {
+        peer: null, conns: [], role: 'HOST', myIdx: 0,
         init() {
-            State.pin = Math.floor(100000 + Math.random() * 900000).toString();
-            State.peer = new Peer('flux-pro-' + State.pin);
-            
-            State.peer.on('open', () => { UI.pinDisplay.innerText = State.pin; });
-            
-            State.peer.on('connection', (connection) => {
-                State.conn = connection;
-                State.role = 'X'; // Creator is X
-                this.setupConnection();
-            });
-
-            State.peer.on('error', (err) => {
-                if(err.type === 'unavailable-id') this.init(); // Retry
+            const sid = Math.floor(100000 + Math.random() * 900000).toString();
+            this.peer = new Peer('flux-' + sid);
+            this.peer.on('open', id => document.getElementById('my-id').innerText = sid);
+            this.peer.on('connection', c => {
+                if(this.conns.length >= 2) return c.close();
+                this.conns.push(c);
+                this.bind(c);
             });
         },
-
-        setMode(mode) {
-            State.mode = mode;
-            document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-            document.getElementById(`card-${mode}`).classList.add('active');
-            haptic(10);
-        },
-
         connect() {
-            const target = UI.joinInput.value;
-            if (target.length !== 6) return alert("Неверный PIN");
-            
-            State.conn = State.peer.connect('flux-pro-' + target);
-            State.role = 'O'; // Joiner is O
-            this.setupConnection();
+            const tid = document.getElementById('target-id').value;
+            if(!tid) return;
+            this.role = 'GUEST';
+            const c = this.peer.connect('flux-' + tid);
+            this.bind(c);
         },
-
-        setupConnection() {
-            State.conn.on('open', () => {
-                haptic([30, 50, 30]);
-                UI.showScreen('game');
-                if (State.role === 'X') {
-                    // Host syncs the selected mode
-                    this.send({ type: 'SYNC_MODE', mode: State.mode });
-                    Engine.start();
+        bind(c) {
+            c.on('open', () => {
+                App.showGame();
+                if(this.role === 'HOST') {
+                    this.send({ type: 'INIT', mode: App.mode, players: App.playerLimit });
                 }
             });
-
-            State.conn.on('data', (payload) => this.handleData(payload));
-            
-            State.conn.on('close', () => {
-                alert("Противник отключился");
-                this.disconnect();
-            });
+            c.on('data', data => Router.handle(data, c));
         },
-
         send(data) {
-            if (State.conn && State.conn.open) State.conn.send(data);
-        },
-
-        disconnect() {
-            if (State.conn) State.conn.close();
-            window.location.reload();
+            this.conns.forEach(c => c.send(data));
         }
     };
 
-    /** GAME ENGINE MODULE */
-    const Engine = {
+    /**
+     * APPLICATION CONTROLLER
+     */
+    const App = {
+        mode: 'ttt', playerLimit: 2, playersJoined: 1, active: false, turn: 0,
+        scores: [0, 0, 0],
+        setPlayers(n) {
+            this.playerLimit = n;
+            document.getElementById('sel-2').classList.toggle('active', n === 2);
+            document.getElementById('sel-3').classList.toggle('active', n === 3);
+            if(n === 3) document.getElementById('m-react').classList.add('hidden');
+            else document.getElementById('m-react').classList.remove('hidden');
+        },
+        setMode(m) {
+            this.mode = m;
+            document.querySelectorAll('.game-card').forEach(c => c.classList.remove('active'));
+            document.getElementById('m-' + m).classList.add('active');
+        },
+        showGame() {
+            document.getElementById('scr-lobby').classList.add('hidden');
+            document.getElementById('scr-game').classList.remove('hidden');
+            document.getElementById('s-box-3').classList.toggle('hidden', this.playerLimit < 3);
+            if(Net.role === 'HOST') this.checkStart();
+        },
+        checkStart() {
+            this.playersJoined = Net.conns.length + 1;
+            if(this.playersJoined === this.playerLimit) {
+                this.start();
+                Net.send({ type: 'START', mode: this.mode, limit: this.playerLimit });
+            }
+        },
         start() {
-            State.active = true;
-            State.turn = 'X';
-            UI.restartBtn.classList.add('hidden');
-            
-            if (['classic', 'ghost', 'connect4'].includes(State.mode)) {
-                GridGame.build();
-            } else {
-                ActionGame.build();
-            }
-            this.updateUI();
+            this.active = true; this.turn = 0;
+            document.getElementById('btn-restart').classList.add('hidden');
+            document.getElementById('board-root').classList.remove('hidden');
+            document.getElementById('reaction-zone').classList.add('hidden');
+            Games[this.mode].init();
+            this.updateStatus();
         },
-
-        requestRestart() {
-            this.start();
-            Network.send({ type: 'RESTART' });
+        updateStatus(msg) {
+            const st = document.getElementById('status');
+            if(msg) { st.innerText = msg; return; }
+            const isMe = (Net.role === 'HOST' && this.turn === 0) || (Net.role === 'GUEST' && this.turn === Net.myIdx);
+            st.innerText = isMe ? "ВАШ ХОД" : `ОЖИДАНИЕ ИГРОКА ${this.turn + 1}`;
+            st.style.color = isMe ? 'var(--accent)' : '#fff';
         },
-
-        updateUI() {
-            if (!State.active) return;
-            if (['reaction'].includes(State.mode)) return; // Action games have own UI logic
-
-            const isMyTurn = State.turn === State.role;
-            UI.setStatus(isMyTurn ? "ТВОЙ ХОД" : "ОЖИДАНИЕ ВРАГА", isMyTurn ? "var(--accent)" : "var(--text-muted)");
+        restart() {
+            if(Net.role === 'HOST') { this.start(); Net.send({ type: 'RESTART' }); }
         }
     };
 
-    /** GRID BASED GAMES (TicTacToe, Connect4) */
-    const GridGame = {
-        config: {
-            classic: { r: 3, c: 3, win: 3 },
-            ghost:   { r: 3, c: 3, win: 3 },
-            connect4:{ r: 6, c: 7, win: 4 }
-        },
-
-        build() {
-            UI.actionBar.classList.add('hidden');
-            UI.board.classList.remove('hidden');
-            
-            const cfg = this.config[State.mode];
-            UI.board.style.gridTemplateColumns = `repeat(${cfg.c}, 1fr)`;
-            UI.board.innerHTML = '';
-            
-            State.board = Array(cfg.r * cfg.c).fill(null);
-            State.history = []; // For ghost mode
-
-            for (let i = 0; i < State.board.length; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell glass';
-                cell.onclick = () => this.handleTap(i);
-                UI.board.appendChild(cell);
+    const Router = {
+        handle(data, conn) {
+            switch(data.type) {
+                case 'INIT': App.mode = data.mode; App.playerLimit = data.players; break;
+                case 'START': Net.myIdx = Net.conns.indexOf(conn) + 1; App.playerLimit = data.limit; App.mode = data.mode; App.start(); break;
+                case 'MOVE': Games[App.mode].apply(data.idx, data.p); break;
+                case 'RESTART': App.start(); break;
+                case 'WIN': 
+                    App.active = false;
+                    App.updateStatus(data.msg);
+                    document.getElementById('btn-restart').classList.remove('hidden');
+                    break;
             }
-        },
+            if(Net.role === 'HOST') Net.send(data);
+        }
+    };
 
-        handleTap(index) {
-            if (!State.active || State.turn !== State.role) return;
-
-            const cfg = this.config[State.mode];
-            let targetIndex = index;
-
-            // Connect4 Gravity Logic
-            if (State.mode === 'connect4') {
-                const col = index % cfg.c;
-                targetIndex = -1;
-                for (let r = cfg.r - 1; r >= 0; r--) {
-                    if (!State.board[r * cfg.c + col]) {
-                        targetIndex = r * cfg.c + col;
-                        break;
+    /**
+     * GAMES LOGIC MODULES
+     */
+    const Games = {
+        // --- TIC TAC TOE (Adaptive) ---
+        ttt: {
+            grid: [], size: 3,
+            init() {
+                this.size = App.playerLimit === 3 ? 6 : 3;
+                const b = document.getElementById('board-root');
+                b.style.gridTemplateColumns = `repeat(${this.size}, 1fr)`;
+                b.innerHTML = '';
+                this.grid = Array(this.size * this.size).fill(null);
+                for(let i=0; i<this.grid.length; i++) {
+                    const c = document.createElement('div');
+                    c.className = 'cell glass';
+                    c.onclick = () => this.tap(i);
+                    b.appendChild(c);
+                }
+            },
+            tap(i) {
+                if(!App.active || this.grid[i] || !this.isMyTurn()) return;
+                this.apply(i, App.turn);
+                Net.send({ type: 'MOVE', idx: i, p: App.turn });
+            },
+            apply(i, p) {
+                this.grid[i] = p;
+                const cells = document.getElementById('board-root').children;
+                const sym = ['X', 'O', '▲'];
+                cells[i].innerText = sym[p];
+                cells[i].classList.add('p' + (p+1));
+                if(this.checkWin(p)) {
+                    App.active = false;
+                    const msg = `ИГРОК ${p+1} ВЫИГРАЛ!`;
+                    App.updateStatus(msg);
+                    if(Net.role === 'HOST') Net.send({ type: 'WIN', msg });
+                    document.getElementById('btn-restart').classList.remove('hidden');
+                } else {
+                    App.turn = (App.turn + 1) % App.playerLimit;
+                    App.updateStatus();
+                }
+            },
+            isMyTurn() { return (Net.role === 'HOST' && App.turn === 0) || (Net.role === 'GUEST' && App.turn === Net.myIdx); },
+            checkWin(p) {
+                const s = this.size, target = App.playerLimit === 3 ? 4 : 3;
+                for(let i=0; i<this.grid.length; i++) {
+                    if(this.grid[i] !== p) continue;
+                    for(let [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
+                        let c = 1;
+                        for(let step=1; step<target; step++) {
+                            let r = Math.floor(i/s) + dr*step, col = (i%s) + dc*step;
+                            if(r>=0 && r<s && col>=0 && col<s && this.grid[r*s+col] === p) c++; else break;
+                        }
+                        if(c === target) return true;
                     }
                 }
-                if (targetIndex === -1) return; // Column full
-            } else {
-                if (State.board[targetIndex]) return; // Cell occupied
+                return false;
             }
-
-            haptic(15);
-            this.applyMove(targetIndex, State.role);
-            Network.send({ type: 'MOVE', index: targetIndex, symbol: State.role });
         },
 
-        applyMove(index, symbol) {
-            State.board[index] = symbol;
-            const cells = UI.board.children;
-            
-            if (State.mode === 'connect4') {
-                cells[index].classList.add(`coin-${symbol.toLowerCase()}`);
-            } else {
-                cells[index].innerText = symbol;
-                cells[index].classList.add(symbol.toLowerCase());
-            }
-
-            // Ghost Mode Logic
-            if (State.mode === 'ghost') {
-                State.history.push({ i: index, s: symbol });
-                const myMoves = State.history.filter(m => m.s === symbol);
-                
-                if (myMoves.length > 3) {
-                    const oldest = myMoves.shift();
-                    State.board[oldest.i] = null;
-                    cells[oldest.i].innerText = '';
-                    cells[oldest.i].className = 'cell glass';
-                    State.history = State.history.filter(m => !(m.i === oldest.i && m.s === oldest.s));
+        // --- GHOST MODE ---
+        ghost: {
+            queues: [[], [], []],
+            init() { Games.ttt.init.call(this); this.queues = [[], [], []]; },
+            tap(i) { Games.ttt.tap.call(this, i); },
+            apply(i, p) {
+                const cells = document.getElementById('board-root').children;
+                this.queues[p].push(i);
+                if(this.queues[p].length > 3) {
+                    const old = this.queues[p].shift();
+                    this.grid[old] = null;
+                    cells[old].innerText = ''; cells[old].className = 'cell glass';
                 }
-                
-                // Highlight next to fade
-                cells.forEach(c => c.classList.remove('fading'));
-                ['X', 'O'].forEach(sym => {
-                    const moves = State.history.filter(m => m.s === sym);
-                    if (moves.length === 3) cells[moves[0].i].classList.add('fading');
+                this.grid[i] = p;
+                cells[i].innerText = ['X', 'O', '▲'][p];
+                cells[i].classList.add('p' + (p+1));
+                Array.from(cells).forEach(c => c.classList.remove('fading'));
+                this.queues.forEach(q => { if(q.length === 3) cells[q[0]].classList.add('fading'); });
+
+                if(Games.ttt.checkWin.call(this, p)) {
+                    App.active = false; document.getElementById('btn-restart').classList.remove('hidden');
+                    App.updateStatus(`ПРИЗРАК ${p+1} ПОБЕДИЛ!`);
+                } else { App.turn = (App.turn + 1) % App.playerLimit; App.updateStatus(); }
+            },
+            isMyTurn() { return Games.ttt.isMyTurn(); }
+        },
+
+        // --- CONNECT 4 (7x6 Gravity) ---
+        c4: {
+            cols: 7, rows: 6,
+            init() {
+                const b = document.getElementById('board-root');
+                b.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
+                b.innerHTML = '';
+                this.grid = Array(this.cols * this.rows).fill(null);
+                for(let i=0; i<this.grid.length; i++) {
+                    const c = document.createElement('div');
+                    c.className = 'cell glass coin';
+                    c.onclick = () => {
+                        let col = i % this.cols;
+                        for(let r=5; r>=0; r--) {
+                            if(this.grid[r*7+col] === null) {
+                                if(!Games.ttt.isMyTurn()) return;
+                                Net.send({ type: 'MOVE', idx: r*7+col, p: App.turn });
+                                this.apply(r*7+col, App.turn);
+                                break;
+                            }
+                        }
+                    };
+                    b.appendChild(c);
+                }
+            },
+            apply(idx, p) {
+                this.grid[idx] = p;
+                document.getElementById('board-root').children[idx].classList.add('p'+(p+1));
+                if(Games.ttt.checkWin.call({grid: this.grid, size: 7}, p)) {
+                    App.active = false; App.updateStatus(`CONNECT 4: P${p+1}`);
+                    document.getElementById('btn-restart').classList.remove('hidden');
+                } else { App.turn = (App.turn + 1) % App.playerLimit; App.updateStatus(); }
+            }
+        },
+
+        // --- MEMORY ---
+        mem: {
+            flipped: [], deck: [],
+            init() {
+                const b = document.getElementById('board-root');
+                b.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                b.innerHTML = ''; this.flipped = [];
+                const emojis = ['🔥','💎','🌀','💀','⚡','🍀','🍎','🍄'];
+                if(Net.role === 'HOST') {
+                    this.deck = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
+                    Net.send({ type: 'MOVE', idx: -1, p: -1, extra: this.deck });
+                }
+                this.render();
+            },
+            render() {
+                const b = document.getElementById('board-root');
+                b.innerHTML = '';
+                this.deck.forEach((e, i) => {
+                    const c = document.createElement('div');
+                    c.className = 'cell glass';
+                    c.innerText = '❓';
+                    c.onclick = () => {
+                        if(!Games.ttt.isMyTurn() || this.flipped.length >= 2 || c.classList.contains('matched')) return;
+                        this.apply(i, App.turn);
+                        Net.send({ type: 'MOVE', idx: i, p: App.turn });
+                    };
+                    b.appendChild(c);
                 });
-            }
+            },
+            apply(idx, p) {
+                if(idx === -1) { this.deck = arguments[2].extra; this.render(); return; }
+                const cells = document.getElementById('board-root').children;
+                cells[idx].innerText = this.deck[idx];
+                this.flipped.push({ idx, val: this.deck[idx] });
 
-            if (this.checkWin(symbol)) {
-                this.endGame(symbol === State.role ? "ПОБЕДА!" : "ПРОИГРЫШ", symbol === State.role ? "var(--o-color)" : "var(--x-color)");
-            } else if (!State.board.includes(null) && State.mode !== 'ghost') {
-                this.endGame("НИЧЬЯ", "var(--text-main)");
-            } else {
-                State.turn = State.turn === 'X' ? 'O' : 'X';
-                Engine.updateUI();
-            }
-        },
-
-        checkWin(symbol) {
-            const cfg = this.config[State.mode];
-            const target = cfg.win;
-
-            for (let i = 0; i < State.board.length; i++) {
-                if (State.board[i] !== symbol) continue;
-                
-                const r = Math.floor(i / cfg.c);
-                const c = i % cfg.c;
-                const dirs = [[0,1], [1,0], [1,1], [1,-1]]; // Right, Down, Down-Right, Down-Left
-
-                for (let [dr, dc] of dirs) {
-                    let count = 1;
-                    let winLine = [i];
-                    
-                    for (let step = 1; step < target; step++) {
-                        let nr = r + dr * step;
-                        let nc = c + dc * step;
-                        if (nr >= 0 && nr < cfg.r && nc >= 0 && nc < cfg.c && State.board[nr * cfg.c + nc] === symbol) {
-                            count++;
-                            winLine.push(nr * cfg.c + nc);
-                        } else break;
-                    }
-
-                    if (count >= target) {
-                        winLine.forEach(idx => UI.board.children[idx].classList.add('win'));
-                        return true;
+                if(this.flipped.length === 2) {
+                    const [a, b] = this.flipped;
+                    if(a.val === b.val) {
+                        cells[a.idx].classList.add('matched'); cells[b.idx].classList.add('matched');
+                        this.flipped = [];
+                    } else {
+                        setTimeout(() => {
+                            cells[a.idx].innerText = '❓'; cells[b.idx].innerText = '❓';
+                            this.flipped = [];
+                            App.turn = (App.turn + 1) % App.playerLimit;
+                            App.updateStatus();
+                        }, 1000);
                     }
                 }
             }
-            return false;
         },
 
-        endGame(msg, color) {
-            State.active = false;
-            UI.setStatus(msg, color);
-            UI.restartBtn.classList.remove('hidden');
-            haptic([50, 100, 50]);
+        // --- RPS ---
+        rps: {
+            choices: [],
+            init() {
+                this.choices = Array(App.playerLimit).fill(null);
+                const b = document.getElementById('board-root');
+                b.style.gridTemplateColumns = '1fr';
+                b.innerHTML = `
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button class="btn glass" onclick="Games.rps.tap('R')">🪨</button>
+                        <button class="btn glass" onclick="Games.rps.tap('P')">📄</button>
+                        <button class="btn glass" onclick="Games.rps.tap('S')">✂️</button>
+                    </div>
+                `;
+            },
+            tap(val) {
+                const myIdx = Net.role === 'HOST' ? 0 : Net.myIdx;
+                if(this.choices[myIdx]) return;
+                this.apply(myIdx, val);
+                Net.send({ type: 'MOVE', idx: myIdx, p: val });
+            },
+            apply(idx, val) {
+                this.choices[idx] = val;
+                App.updateStatus(`ИГРОК ${idx+1} ВЫБРАЛ`);
+                if(!this.choices.includes(null)) {
+                    const res = this.choices.join(' vs ');
+                    App.updateStatus(res);
+                    App.active = false;
+                    document.getElementById('btn-restart').classList.remove('hidden');
+                }
+            }
+        },
+
+        // --- REACTION (2 Players Only) ---
+        react: {
+            init() {
+                document.getElementById('board-root').classList.add('hidden');
+                const rz = document.getElementById('reaction-zone');
+                rz.classList.remove('hidden');
+                rz.style.background = 'var(--glass)';
+                rz.innerText = 'ЖДИ ЗЕЛЕНОГО...';
+                if(Net.role === 'HOST') {
+                    setTimeout(() => {
+                        const time = Date.now();
+                        Net.send({ type: 'MOVE', idx: 999, p: time });
+                        this.apply(999, time);
+                    }, 2000 + Math.random() * 3000);
+                }
+            },
+            apply(idx, time) {
+                const rz = document.getElementById('reaction-zone');
+                if(idx === 999) {
+                    rz.style.background = 'var(--p2)';
+                    rz.innerText = 'ЖМИ!!!';
+                    this.startTime = time;
+                } else {
+                    const diff = Date.now() - this.startTime;
+                    App.updateStatus(`P${idx+1}: ${diff}ms`);
+                    App.active = false;
+                    document.getElementById('btn-restart').classList.remove('hidden');
+                }
+            }
         }
     };
 
-    /** ACTION GAMES (Reaction) */
-    const ActionGame = {
-        timer: null,
-        state: 'wait', // wait, ready, done
-
-        build() {
-            UI.board.classList.add('hidden');
-            UI.actionBar.classList.remove('hidden');
-            State.scoreMe = 0;
-            State.scoreOpp = 0;
-            this.updateScores();
-            this.startRound();
-        },
-
-        startRound() {
-            clearTimeout(this.timer);
-            this.state = 'wait';
-            UI.actionPad.className = 'action-pad pad-red';
-            UI.actionPad.innerText = 'ЖДИ';
-            UI.setStatus("Внимание...", "var(--x-color)");
-
-            // Host dictates timing to keep it fair
-            if (State.role === 'X') {
-                const delay = 2000 + Math.random() * 3000;
-                this.timer = setTimeout(() => {
-                    this.triggerGreen();
-                    Network.send({ type: 'ACTION_GREEN' });
-                }, delay);
-            }
-        },
-
-        triggerGreen() {
-            if (!State.active) return;
-            this.state = 'ready';
-            UI.actionPad.className = 'action-pad pad-green';
-            UI.actionPad.innerText = 'ЖМИ!';
-            UI.setStatus("СЕЙЧАС!", "var(--o-color)");
-            haptic(100);
-        },
-
-        handlePress() {
-            if (!State.active) return;
-            
-            if (this.state === 'wait') {
-                // False start
-                this.state = 'done';
-                Network.send({ type: 'ACTION_WIN', winner: State.role === 'X' ? 'O' : 'X', reason: 'false_start' });
-                this.roundEnd('Фальстарт! Проигрыш', 'var(--x-color)');
-            } else if (this.state === 'ready') {
-                this.state = 'done';
-                Network.send({ type: 'ACTION_WIN', winner: State.role, reason: 'fast' });
-                this.roundEnd('Ты быстрее!', 'var(--o-color)');
-                State.scoreMe++;
-                this.updateScores();
-            }
-        },
-
-        processOpponentResult(winner, reason) {
-            this.state = 'done';
-            clearTimeout(this.timer);
-            if (winner === State.role) {
-                State.scoreMe++;
-                this.roundEnd(reason === 'false_start' ? 'Враг сделал фальстарт!' : 'Ты быстрее!', 'var(--o-color)');
-            } else {
-                State.scoreOpp++;
-                this.roundEnd(reason === 'false_start' ? 'Твой фальстарт!' : 'Враг быстрее!', 'var(--x-color)');
-            }
-            this.updateScores();
-        },
-
-        roundEnd(msg, color) {
-            UI.setStatus(msg, color);
-            UI.actionPad.className = 'action-pad pad-blue';
-            UI.actionPad.innerText = '...';
-            
-            if (State.scoreMe >= 3 || State.scoreOpp >= 3) {
-                State.active = false;
-                UI.setStatus(State.scoreMe >= 3 ? "МАТЧ ВЫИГРАН!" : "МАТЧ ПРОИГРАН", State.scoreMe >= 3 ? "var(--o-color)" : "var(--x-color)");
-                UI.restartBtn.classList.remove('hidden');
-            } else {
-                setTimeout(() => this.startRound(), 2000);
-            }
-        },
-
-        updateScores() {
-            document.getElementById('score-me').innerText = State.scoreMe;
-            document.getElementById('score-opp').innerText = State.scoreOpp;
-        }
+    document.getElementById('reaction-zone').onclick = () => {
+        if(!App.active || document.getElementById('reaction-zone').style.background === 'var(--glass)') return;
+        const myIdx = Net.role === 'HOST' ? 0 : Net.myIdx;
+        Net.send({ type: 'MOVE', idx: myIdx, p: 'click' });
+        Games.react.apply(myIdx, 'click');
     };
 
-    /** DATA ROUTER */
-    Network.handleData = function(payload) {
-        switch (payload.type) {
-            case 'SYNC_MODE':
-                State.mode = payload.mode;
-                Engine.start();
-                break;
-            case 'MOVE':
-                GridGame.applyMove(payload.index, payload.symbol);
-                break;
-            case 'ACTION_GREEN':
-                ActionGame.triggerGreen();
-                break;
-            case 'ACTION_WIN':
-                ActionGame.processOpponentResult(payload.winner, payload.reason);
-                break;
-            case 'RESTART':
-                Engine.start();
-                break;
-        }
-    };
-
-    // Initialize Network on load
-    Network.init();
-
+    Net.init();
 </script>
 </body>
 </html>
