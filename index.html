@@ -3,281 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS Connect 4 Random ID</title>
+    <title>FluxOS Gaming Hub</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg: #050505;
-            --card: #111111;
+            --bg: #08080a;
+            --card: #121217;
             --accent: #007aff;
             --p1: #ff3b30;
             --p2: #ffcc00;
             --text: #ffffff;
+            --glass: rgba(255, 255, 255, 0.05);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
 
         body {
             background: var(--bg);
             color: var(--text);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            padding: 20px;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #08080a 100%);
         }
 
         .container {
             width: 100%;
-            max-width: 380px;
+            max-width: 400px;
             background: var(--card);
             padding: 25px;
-            border-radius: 24px;
-            border: 1px solid #222;
+            border-radius: 32px;
+            border: 1px solid rgba(255,255,255,0.1);
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            position: relative;
         }
 
-        h1 { font-size: 20px; margin-bottom: 20px; font-weight: 500; color: #888; }
-
-        .id-display {
-            background: #1a1a1a;
-            color: var(--accent);
-            font-size: 32px;
-            font-weight: 800;
-            padding: 15px;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            letter-spacing: 5px;
-            border: 1px solid var(--accent);
+        /* Анимация частиц на фоне */
+        .particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0.3;
+            pointer-events: none;
+            animation: float 5s infinite linear;
         }
+
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-100px) scale(0.5); opacity: 0; }
+        }
+
+        h1 { font-size: 24px; font-weight: 700; margin-bottom: 20px; background: linear-gradient(90deg, #007aff, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 18px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-main { background: var(--accent); color: white; box-shadow: 0 8px 20px rgba(0,122,255,0.3); }
+        .btn-sec { background: var(--glass); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+        .btn:active { transform: scale(0.95); }
 
         input {
             width: 100%;
             padding: 15px;
-            border-radius: 14px;
+            border-radius: 16px;
             border: 1px solid #333;
             background: #000;
             color: white;
             font-size: 20px;
             text-align: center;
             margin-bottom: 15px;
+            outline: none;
         }
 
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border-radius: 14px;
-            border: none;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 10px;
-            transition: 0.2s;
-        }
-
-        .btn-main { background: var(--accent); color: white; }
-        .btn-sec { background: #222; color: #ccc; }
+        /* Игровые поля */
+        #board-container { margin: 20px 0; perspective: 1000px; }
         
-        #board {
+        #board-7-6 {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 6px;
-            background: #1a1a1a;
+            background: rgba(255,255,255,0.03);
             padding: 10px;
-            border-radius: 16px;
-            margin-top: 15px;
+            border-radius: 20px;
+        }
+
+        #board-3-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 20px;
         }
 
         .cell {
-            background: #262626;
+            background: #1c1c21;
             aspect-ratio: 1/1;
             border-radius: 50%;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 800;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
         }
 
-        .p1 { background: var(--p1); box-shadow: 0 0 15px var(--p1); transform: scale(0.9); }
-        .p2 { background: var(--p2); box-shadow: 0 0 15px var(--p2); transform: scale(0.9); }
+        .cell-sq { border-radius: 16px; }
+
+        .p1 { background: var(--p1); box-shadow: 0 0 20px rgba(255,59,48,0.4); transform: scale(0.9) rotateY(180deg); }
+        .p2 { background: var(--p2); box-shadow: 0 0 20px rgba(255,204,0,0.4); transform: scale(0.9) rotateY(180deg); }
 
         .hidden { display: none !important; }
-        .status-msg { margin-bottom: 10px; font-weight: 600; font-size: 18px; }
+        .status-msg { font-weight: 700; margin-bottom: 15px; min-height: 24px; }
+        .id-badge { color: var(--accent); font-weight: 800; font-size: 28px; margin: 10px 0; }
     </style>
 </head>
 <body>
 
-    <div id="setup" class="container">
-        <h1>CONNECT 4 P2P</h1>
-        
-        <div id="main-actions">
-            <button class="btn btn-main" onclick="startHost()">Создать новую игру</button>
-            <div style="margin: 15px 0; color: #444">или</div>
-            <input type="number" id="room-input" placeholder="Введите код друга">
-            <button class="btn btn-sec" onclick="startJoin()">Войти по коду</button>
+    <div id="menu" class="container">
+        <h1>FLUX GAMING</h1>
+        <div id="init-btns">
+            <button class="btn btn-main" onclick="prepareGame(true)">Создать лобби</button>
+            <input type="number" id="join-input" placeholder="Код друга">
+            <button class="btn btn-sec" onclick="prepareGame(false)">Войти в игру</button>
         </div>
-
-        <div id="host-wait" class="hidden">
-            <p style="margin-bottom: 10px">Твой код комнаты:</p>
-            <div class="id-display" id="generated-id">------</div>
-            <p style="color: #666; font-size: 14px">Скажи этот код другу</p>
-            <button class="btn btn-sec" style="margin-top: 20px" onclick="location.reload()">Отмена</button>
+        <div id="lobby-wait" class="hidden">
+            <p>Ваш код:</p>
+            <div class="id-badge" id="my-code">000000</div>
+            <p style="color: #666">Ждем друга...</p>
         </div>
     </div>
 
-    <div id="game" class="container hidden">
-        <div class="status-msg" id="game-status">Ожидание...</div>
-        <div id="board"></div>
-        <button class="btn btn-sec" style="margin-top:20px" onclick="location.reload()">Выйти</button>
+    <div id="game-selector" class="container hidden">
+        <h1>ВЫБЕРИ ИГРУ</h1>
+        <button class="btn btn-main" onclick="selectGame('7-6')">4 в ряд (7x6)</button>
+        <button class="btn btn-sec" onclick="selectGame('3-3')">Крестики-Нолики (3x3)</button>
+    </div>
+
+    <div id="game-screen" class="container hidden">
+        <div id="game-status" class="status-msg">Твой ход</div>
+        <div id="board-container">
+            <div id="board-main"></div>
+        </div>
+        <div id="post-game" class="hidden">
+            <button class="btn btn-main" onclick="requestRematch()">Играть снова</button>
+            <button class="btn btn-sec" onclick="location.reload()">Выйти в меню</button>
+        </div>
     </div>
 
     <script>
-        let peer = null, conn = null;
-        let board = [], isHost = false, myTurn = false;
-        const ROWS = 6, COLS = 7;
+        let peer, conn;
+        let isHost = false, myTurn = false, currentGame = '7-6';
+        let board = [], gameOver = false;
 
-        // Генерация случайного 6-значного числа
-        function generateCode() {
-            return Math.floor(100000 + Math.random() * 900000).toString();
-        }
+        // Создание частиц
+        setInterval(() => {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.bottom = '0px';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 5000);
+        }, 300);
 
-        function startHost() {
-            const code = generateCode();
-            isHost = true;
-            initPeer('f4-' + code, code);
-        }
+        function prepareGame(host) {
+            isHost = host;
+            const code = isHost ? Math.floor(100000 + Math.random() * 900000).toString() : document.getElementById('join-input').value;
+            if (!isHost && code.length < 5) return alert("Введите код!");
 
-        function startJoin() {
-            const code = document.getElementById('room-input').value;
-            if (code.length < 5) return alert("Введите корректный код!");
-            isHost = false;
-            initPeer(null, code);
-        }
-
-        function initPeer(customId, displayCode) {
-            // Если мы хост, регистрируем ID, если клиент - получаем случайный от системы
-            peer = customId ? new Peer(customId) : new Peer();
-
-            peer.on('open', (id) => {
-                if (isHost) {
-                    document.getElementById('main-actions').classList.add('hidden');
-                    document.getElementById('host-wait').classList.remove('hidden');
-                    document.getElementById('generated-id').innerText = displayCode;
+            peer = isHost ? new Peer('f-hub-' + code) : new Peer();
+            
+            peer.on('open', () => {
+                if(isHost) {
+                    document.getElementById('init-btns').classList.add('hidden');
+                    document.getElementById('lobby-wait').classList.remove('hidden');
+                    document.getElementById('my-code').innerText = code;
                 } else {
-                    connectTo('f4-' + displayCode);
+                    connectTo('f-hub-' + code);
                 }
             });
 
             peer.on('connection', (c) => {
                 conn = c;
-                setupEvents();
+                setupNetworking();
             });
 
-            peer.on('error', (err) => {
-                if (err.type === 'unavailable-id') {
-                    // Если вдруг рандом совпал с кем-то, пробуем еще раз
-                    if (isHost) startHost(); 
-                } else {
-                    alert("Ошибка: " + err.type);
-                    location.reload();
-                }
-            });
+            peer.on('error', () => { alert("Ошибка! Код занят или сеть упала."); location.reload(); });
         }
 
-        function connectTo(targetId) {
-            conn = peer.connect(targetId);
-            setupEvents();
+        function connectTo(id) {
+            conn = peer.connect(id);
+            setupNetworking();
         }
 
-        function setupEvents() {
+        function setupNetworking() {
             conn.on('open', () => {
-                document.getElementById('setup').classList.add('hidden');
-                document.getElementById('game').classList.remove('hidden');
-                initBoard();
+                if(isHost) {
+                    document.getElementById('menu').classList.add('hidden');
+                    document.getElementById('game-selector').classList.remove('hidden');
+                }
             });
 
             conn.on('data', (data) => {
-                if (data.type === 'move') {
-                    applyMove(data.col, isHost ? 2 : 1);
-                    myTurn = true;
-                    updateUI();
+                if(data.type === 'start') {
+                    currentGame = data.game;
+                    startGame(false);
+                } else if(data.type === 'move') {
+                    handleRemoteMove(data.r, data.c);
+                } else if(data.type === 'rematch-req') {
+                    if(confirm("Друг хочет сыграть еще раз. Согласны?")) {
+                        conn.send({type: 'rematch-ok'});
+                        startGame(isHost);
+                    }
+                } else if(data.type === 'rematch-ok') {
+                    startGame(isHost);
                 }
             });
         }
 
-        function initBoard() {
-            board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
-            myTurn = isHost;
-            drawBoard();
-            updateUI();
+        function selectGame(type) {
+            currentGame = type;
+            conn.send({type: 'start', game: type});
+            startGame(true);
         }
 
-        function drawBoard() {
-            const b = document.getElementById('board');
-            b.innerHTML = '';
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    if (board[r][c] === 1) cell.classList.add('p1');
-                    if (board[r][c] === 2) cell.classList.add('p2');
-                    cell.onclick = () => makeMove(c);
-                    b.appendChild(cell);
-                }
-            }
-        }
+        function startGame(first) {
+            document.getElementById('game-selector').classList.add('hidden');
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('post-game').classList.add('hidden');
 
-        function makeMove(col) {
-            if (!myTurn) return;
-            const r = getRow(col);
-            if (r === -1) return;
-
-            board[r][col] = isHost ? 1 : 2;
-            conn.send({ type: 'move', col: col });
-            myTurn = false;
+            const R = currentGame === '7-6' ? 6 : 3;
+            const C = currentGame === '7-6' ? 7 : 3;
+            board = Array(R).fill().map(() => Array(C).fill(0));
             
-            drawBoard();
-            if (checkWin(r, col, board[r][col])) {
-                document.getElementById('game-status').innerText = "ТЫ ПОБЕДИЛ! 🎉";
-                myTurn = false;
+            gameOver = false;
+            myTurn = first;
+            renderBoard();
+            updateStatus();
+        }
+
+        function renderBoard() {
+            const container = document.getElementById('board-main');
+            container.id = currentGame === '7-6' ? 'board-7-6' : 'board-3-3';
+            container.innerHTML = '';
+
+            board.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell' + (currentGame === '3-3' ? ' cell-sq' : '');
+                    if(val === 1) cell.classList.add('p1');
+                    if(val === 2) cell.classList.add('p2');
+                    if(currentGame === '3-3' && val !== 0) cell.innerText = val === 1 ? '✕' : '◯';
+                    
+                    cell.onclick = () => makeMove(r, c);
+                    container.appendChild(cell);
+                });
+            });
+        }
+
+        function makeMove(r, c) {
+            if(!myTurn || gameOver || board[r][c] !== 0) return;
+
+            if(currentGame === '7-6') {
+                r = -1;
+                for(let i=5; i>=0; i--) if(board[i][c] === 0) { r = i; break; }
+                if(r === -1) return;
+            }
+
+            board[r][c] = isHost ? 1 : 2;
+            conn.send({type: 'move', r: r, c: c});
+            finishTurn(r, c);
+        }
+
+        function handleRemoteMove(r, c) {
+            board[r][c] = isHost ? 2 : 1;
+            finishTurn(r, c);
+        }
+
+        function finishTurn(r, c) {
+            renderBoard();
+            const win = checkWin(r, c, board[r][c]);
+            if(win) {
+                gameOver = true;
+                document.getElementById('game-status').innerText = board[r][c] === (isHost ? 1 : 2) ? "ПОБЕДА!" : "ПРОИГРЫШ!";
+                document.getElementById('post-game').classList.remove('hidden');
+            } else if(board.flat().every(v => v !== 0)) {
+                document.getElementById('game-status').innerText = "НИЧЬЯ!";
+                document.getElementById('post-game').classList.remove('hidden');
             } else {
-                updateUI();
+                myTurn = !myTurn;
+                updateStatus();
             }
         }
 
-        function applyMove(col, p) {
-            const r = getRow(col);
-            board[r][col] = p;
-            drawBoard();
-            if (checkWin(r, col, p)) {
-                document.getElementById('game-status').innerText = "ПРОТИВНИК ВЫИГРАЛ 💀";
-                myTurn = false;
-            }
+        function updateStatus() {
+            document.getElementById('game-status').innerText = myTurn ? "ТВОЙ ХОД" : "ХОД ДРУГА...";
+            document.getElementById('game-status').style.color = myTurn ? "var(--p2)" : "#666";
         }
 
-        function getRow(c) {
-            for (let r = ROWS - 1; r >= 0; r--) if (board[r][c] === 0) return r;
-            return -1;
-        }
-
-        function updateUI() {
-            const st = document.getElementById('game-status');
-            st.innerText = myTurn ? "ТВОЙ ХОД" : "ХОД ДРУГА...";
-            st.style.color = myTurn ? "var(--p1)" : "#666";
+        function requestRematch() {
+            document.getElementById('game-status').innerText = "Ожидание друга...";
+            conn.send({type: 'rematch-req'});
         }
 
         function checkWin(r, c, p) {
-            const d = [[0,1],[1,0],[1,1],[1,-1]];
-            for (let [dr, dc] of d) {
+            const target = currentGame === '7-6' ? 4 : 3;
+            const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+            for(let [dr, dc] of dirs) {
                 let ct = 1;
-                for (let i=1; i<4; i++) {
+                for(let i=1; i<target; i++) {
                     let nr=r+dr*i, nc=c+dc*i;
-                    if (nr>=0 && nr<ROWS && nc>=0 && nc<COLS && board[nr][nc]===p) ct++; else break;
+                    if(nr>=0 && nr<board.length && nc>=0 && nc<board[0].length && board[nr][nc]===p) ct++; else break;
                 }
-                for (let i=1; i<4; i++) {
+                for(let i=1; i<target; i++) {
                     let nr=r-dr*i, nc=c-dc*i;
-                    if (nr>=0 && nr<ROWS && nc>=0 && nc<COLS && board[nr][nc]===p) ct++; else break;
+                    if(nr>=0 && nr<board.length && nc>=0 && nc<board[0].length && board[nr][nc]===p) ct++; else break;
                 }
-                if (ct >= 4) return true;
+                if(ct >= target) return true;
             }
             return false;
         }
