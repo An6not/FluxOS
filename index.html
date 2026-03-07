@@ -3,366 +3,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS P2P Stable</title>
+    <title>FluxOS P2P Pro FIX</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg: #05070a;
-            --card: #0d1117;
-            --border: #30363d;
-            --accent: #2f81f7;
-            --p1: #f85149; --p2: #3fb950; --p3: #d29922;
-            --text: #f0f6fc;
+            --bg: #050505;
+            --accent: #007aff;
+            --p1: #ff3b30; --p2: #34c759; --p3: #ffcc00;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; justify-content: center; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; user-select: none; outline: none; }
+        body { background: var(--bg); color: #fff; height: 100vh; display: flex; justify-content: center; overflow: hidden; }
 
-        .app { width: 100%; max-width: 440px; display: flex; flex-direction: column; padding: 20px; position: relative; }
+        .app { width: 100%; max-width: 420px; padding: 20px; display: flex; flex-direction: column; position: relative; }
 
-        /* Press Effect */
-        .pressable { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .pressable:active { transform: scale(0.92); filter: brightness(1.3); }
+        /* LUXURY ANIMATIONS */
+        .press-effect { transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1); }
+        .press-effect:active { transform: scale(0.9) !important; filter: brightness(1.5); }
 
-        .glass { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .glass-card { 
+            background: var(--glass); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid var(--border); 
+            border-radius: 30px; 
+            padding: 25px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
 
-        input { width: 100%; padding: 16px; border-radius: 12px; background: #010409; border: 1px solid var(--border); color: #fff; font-size: 16px; margin-bottom: 15px; outline: none; }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.2); }
+        /* INPUTS */
+        input { 
+            width: 100%; padding: 18px; border-radius: 18px; 
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border); 
+            color: #fff; font-size: 16px; margin-bottom: 12px;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
 
-        .btn { padding: 16px; border-radius: 12px; border: none; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .btn-blue { background: var(--accent); color: #fff; width: 100%; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: #fff; flex: 1; }
+        .btn { 
+            padding: 18px; border-radius: 18px; border: none; font-weight: 700; 
+            cursor: pointer; text-align: center; display: block; width: 100%;
+        }
+        .btn-main { background: var(--accent); color: white; box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3); }
+        .btn-sub { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border); }
 
-        /* Lobby Info */
-        .id-val { font-size: 36px; font-weight: 800; color: var(--accent); text-align: center; margin: 15px 0; letter-spacing: 6px; text-shadow: 0 0 20px rgba(47, 129, 247, 0.3); }
-        .p-badge { display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 8px; border: 1px solid transparent; }
-        .p-badge.me { border-color: var(--accent); background: rgba(47, 129, 247, 0.05); }
-        .p-dot { width: 10px; height: 10px; border-radius: 50%; }
+        /* LOBBY */
+        .host-code-wrap { text-align: center; margin: 20px 0; }
+        .host-code { 
+            font-size: 48px; font-weight: 900; color: var(--accent); 
+            letter-spacing: 8px; text-shadow: 0 0 20px rgba(0, 122, 255, 0.4);
+        }
+        .player-row { 
+            display: flex; align-items: center; gap: 12px; padding: 15px; 
+            background: rgba(255,255,255,0.03); border-radius: 15px; margin-bottom: 8px;
+            animation: slideIn 0.4s ease-out;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* Board Styling */
-        .board { display: grid; gap: 8px; background: var(--border); padding: 8px; border-radius: 16px; width: 100%; }
-        .cell { aspect-ratio: 1/1; background: var(--bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; position: relative; }
+        /* GAME BOARD */
+        .board { display: grid; gap: 6px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 20px; width: 100%; }
+        .cell { 
+            aspect-ratio: 1/1; background: #111; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 24px; font-weight: 900; position: relative;
+            transition: 0.2s;
+        }
+        .cell.occupied { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        .cell.coin { border-radius: 50%; }
         .cell.p1 { color: var(--p1); } .cell.p2 { color: var(--p2); } .cell.p3 { color: var(--p3); }
-        
-        /* Connect 4 specific */
-        .cell.coin { border-radius: 50%; border: 4px solid rgba(255,255,255,0.05); }
-        .cell.coin.p1 { background: var(--p1); box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
-        .cell.coin.p2 { background: var(--p2); box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
-        .cell.coin.p3 { background: var(--p3); box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
+        .cell.coin.p1 { background: var(--p1); box-shadow: 0 0 15px var(--p1); }
+        .cell.coin.p2 { background: var(--p2); box-shadow: 0 0 15px var(--p2); }
+        .cell.coin.p3 { background: var(--p3); box-shadow: 0 0 15px var(--p3); }
 
-        .status { text-align: center; font-weight: 700; height: 24px; margin: 15px 0; color: var(--accent); }
-
+        /* INTERFACE STATES */
         .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .status-msg { text-align: center; color: var(--accent); font-weight: 700; height: 30px; margin: 15px 0; }
 
-        /* Admin Visual */
-        .adm-trigger { position: absolute; bottom: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: var(--p1); opacity: 0.5; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        /* ADMIN */
+        .adm-fab { position: absolute; bottom: 30px; right: 30px; width: 45px; height: 45px; border-radius: 50%; background: var(--p1); display: flex; align-items: center; justify-content: center; z-index: 999; }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <div id="scr-login" class="fade-in" style="margin-top: auto; margin-bottom: auto;">
-        <h1 style="text-align:center; font-size: 42px; margin-bottom: 30px;">Flux<span style="color:var(--accent)">OS</span></h1>
-        <input type="text" id="user-nick" placeholder="Введите имя..." maxlength="10">
-        <button class="btn btn-blue pressable" onclick="App.createHost()" id="host-btn">СОЗДАТЬ ЛОББИ</button>
+    <div id="view-auth" class="glass-card" style="margin-top: auto; margin-bottom: auto;">
+        <h2 style="text-align:center; margin-bottom: 25px; letter-spacing: -1px;">FluxOS <span style="color:var(--accent)">ONLINE</span></h2>
+        <input type="text" id="nick-name" placeholder="Твой никнейм" maxlength="10">
+        <button class="btn btn-main press-effect" onclick="Core.initHost()">СОЗДАТЬ ИГРУ</button>
         <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <input type="number" id="join-id" placeholder="ID Хоста" style="margin-bottom:0; flex: 2;">
-            <button class="btn btn-outline pressable" style="flex: 1;" onclick="App.joinHost()">ВХОД</button>
+            <input type="number" id="join-code" placeholder="Код хоста" style="margin-bottom:0; flex: 2;">
+            <button class="btn btn-sub press-effect" style="flex: 1.2;" onclick="Core.initJoin()">ВХОД</button>
         </div>
     </div>
 
-    <div id="scr-lobby" class="hidden fade-in">
-        <div class="glass">
-            <p style="text-align:center; font-size: 11px; opacity: 0.5;">ID ВАШЕЙ КОМНАТЫ</p>
-            <div class="id-val" id="disp-id">LOADING</div>
-            
-            <div id="player-list" style="margin: 20px 0;"></div>
+    <div id="view-lobby" class="hidden glass-card">
+        <div class="host-code-wrap">
+            <p style="font-size: 10px; opacity: 0.5;">КОД ПОДКЛЮЧЕНИЯ</p>
+            <div class="host-code" id="display-id">------</div>
+        </div>
+        
+        <div id="player-list" style="min-height: 100px;"></div>
 
-            <div id="host-controls" class="hidden">
-                <p style="font-size: 11px; margin-bottom: 10px; opacity: 0.7;">ВЫБЕРИТЕ РЕЖИМ ИГРЫ:</p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
-                    <button class="btn btn-outline pressable" id="m-ttt" onclick="App.setMode('ttt')">3X3</button>
-                    <button class="btn btn-outline pressable" id="m-c4" onclick="App.setMode('c4')">7X6</button>
-                    <button class="btn btn-outline pressable" id="m-rps" onclick="App.setMode('rps')">КНБ</button>
-                </div>
-                <button class="btn btn-blue pressable" onclick="Net.broadcastStart()">НАЧАТЬ ИГРУ</button>
+        <div id="host-ui" class="hidden" style="margin-top: 20px;">
+            <p style="font-size: 10px; margin-bottom: 10px;">РЕЖИМ:</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+                <button class="btn btn-sub press-effect" id="m-ttt" onclick="Core.setMode('ttt')">3X3</button>
+                <button class="btn btn-sub press-effect" id="m-c4" onclick="Core.setMode('c4')">7X6</button>
+                <button class="btn btn-sub press-effect" id="m-rps" onclick="Core.setMode('rps')">КНБ</button>
             </div>
-            
-            <div id="guest-wait" class="hidden" style="text-align:center; padding: 20px;">
-                <div class="status">Ожидание выбора хоста...</div>
-            </div>
+            <button class="btn btn-main press-effect" onclick="Net.forceStart()">ЗАПУСТИТЬ</button>
+        </div>
+        
+        <div id="guest-ui" class="hidden" style="text-align: center; padding: 20px;">
+            <p class="status-msg">Ждем команду хоста...</p>
         </div>
     </div>
 
-    <div id="scr-game" class="hidden fade-in" style="height: 100%; display: flex; flex-direction: column;">
+    <div id="view-game" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <div id="pill-0" class="p-badge" style="flex:1"><span>P1</span>: <b id="sc-0">0</b></div>
-            <div id="pill-1" class="p-badge" style="flex:1"><span>P2</span>: <b id="sc-1">0</b></div>
-            <div id="pill-2" class="p-badge hidden" style="flex:1"><span>P3</span>: <b id="sc-2">0</b></div>
+            <div id="p-0" class="player-row" style="flex:1; margin-bottom:0; padding: 10px;"><b>P1</b>: <span id="s-0">0</span></div>
+            <div id="p-1" class="player-row" style="flex:1; margin-bottom:0; padding: 10px;"><b>P2</b>: <span id="s-1">0</span></div>
+            <div id="p-2" class="player-row hidden" style="flex:1; margin-bottom:0; padding: 10px;"><b>P3</b>: <span id="s-2">0</span></div>
         </div>
 
-        <div class="status" id="game-status">СИНХРОНИЗАЦИЯ</div>
+        <div class="status-msg" id="game-info">СИНХРОНИЗАЦИЯ...</div>
 
         <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
             <div id="board" class="board"></div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
-            <button class="btn btn-outline pressable" onclick="location.reload()" style="flex: 1;">МЕНЮ</button>
-            <button id="restart-btn" class="btn btn-blue pressable hidden" onclick="Net.broadcastStart()" style="flex: 2;">РЕВАНШ</button>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-sub press-effect" onclick="location.reload()">МЕНЮ</button>
+            <button id="btn-restart" class="btn btn-main press-effect hidden" onclick="Net.forceStart()">ЕЩЁ РАЗ</button>
         </div>
     </div>
 
-    <div id="adm-ui" class="adm-trigger hidden pressable" onclick="Net.admForceWin()">⚡</div>
+    <div id="adm" class="adm-fab hidden press-effect" onclick="Net.admWin()">⚡</div>
 </div>
 
 <script>
     /**
-     * NETWORK CORE (Industrial Peer-to-Peer)
+     * NETWORK CORE (FIXED HANDSHAKE)
      */
     const Net = {
-        peer: null, conns: [], conn: null, role: 'HOST', myIdx: 0, players: [],
+        peer: null, conns: [], conn: null, mode: 'HOST', players: [], myIdx: 0,
         
-        async start(customId) {
-            this.peer = new Peer('flx-' + customId);
-            
-            this.peer.on('open', (id) => {
-                document.getElementById('disp-id').innerText = id.replace('flx-', '');
-                if(this.role === 'HOST') {
-                    this.players = [{name: App.uName, idx: 0}];
-                    App.updateLobbyUI();
-                    document.getElementById('host-controls').classList.remove('hidden');
-                }
-            });
-
-            this.peer.on('connection', (c) => {
-                if(this.players.length >= 3) return c.close();
-                this.conns.push(c);
-                c.on('data', (d) => this.onData(d, c));
-            });
-
-            this.peer.on('error', (err) => {
-                console.error(err);
-                alert("Ошибка сети. Попробуйте другой ID.");
-                location.reload();
+        setup(id) {
+            return new Promise((res) => {
+                // Прямой ID без скрытых префиксов
+                this.peer = new Peer(id);
+                this.peer.on('open', res);
+                this.peer.on('connection', c => this.handleConn(c));
+                this.peer.on('error', e => { alert("ID занят или ошибка сети!"); location.reload(); });
             });
         },
 
-        join(targetId) {
-            this.role = 'GUEST';
-            this.conn = this.peer.connect('flx-' + targetId);
-            this.conn.on('open', () => {
-                this.conn.send({type: 'JOIN_REQ', name: App.uName});
-            });
-            this.conn.on('data', (d) => this.onData(d));
+        handleConn(c) {
+            this.conns.push(c);
+            c.on('data', d => this.onData(d, c));
+            // Мгновенное подтверждение для клиента
+            c.on('open', () => c.send({type: 'ACK'}));
         },
 
         onData(d, c) {
-            if(this.role === 'HOST') {
-                if(d.type === 'JOIN_REQ') {
-                    const newIdx = this.players.length;
-                    this.players.push({name: d.name, idx: newIdx});
-                    this.syncLobby();
-                    App.updateLobbyUI();
+            if(this.mode === 'HOST') {
+                if(d.type === 'JOIN') {
+                    this.players.push({name: d.name, idx: this.players.length});
+                    this.broadcast({type: 'SYNC', p: this.players});
+                    Core.updLobby();
                 }
-                if(d.type === 'MOVE_REQ') Engine.processMove(d.idx, d.pIdx);
+                if(d.type === 'MOVE') Game.process(d.idx, d.p);
             } else {
-                if(d.type === 'LOBBY_SYNC') {
+                if(d.type === 'SYNC') {
                     this.players = d.p;
-                    this.myIdx = this.players.findIndex(x => x.name === App.uName);
-                    App.updateLobbyUI();
+                    this.myIdx = this.players.findIndex(x => x.name === Core.uName);
+                    Core.updLobby();
                 }
-                if(d.type === 'GAME_START') {
-                    App.mode = d.mode;
-                    Engine.state = d.state;
-                    App.showScreen('scr-game');
-                    Engine.render();
+                if(d.type === 'START') {
+                    Core.gMode = d.m; Game.state = d.s;
+                    Core.switch('view-game'); Game.draw();
                 }
-                if(d.type === 'STATE_UP') {
-                    Engine.state = d.state;
-                    Engine.render();
-                }
+                if(d.type === 'UP') { Game.state = d.s; Game.draw(); }
             }
         },
 
-        syncLobby() { this.conns.forEach(c => c.send({type: 'LOBBY_SYNC', p: this.players})); },
+        broadcast(data) { this.conns.forEach(c => c.send(data)); },
         
-        broadcastStart() {
-            Engine.initGame();
-            const startPkg = {type: 'GAME_START', mode: App.mode, state: Engine.state};
-            this.conns.forEach(c => c.send(startPkg));
-            App.showScreen('scr-game');
-            Engine.render();
+        forceStart() {
+            Game.init();
+            this.broadcast({type: 'START', m: Core.gMode, s: Game.state});
+            Core.switch('view-game'); Game.draw();
         },
 
-        sendMove(idx) {
-            if(this.role === 'HOST') Engine.processMove(idx, this.myIdx);
-            else this.conn.send({type: 'MOVE_REQ', idx: idx, pIdx: this.myIdx});
-        },
-
-        admForceWin() {
-            if(this.role === 'HOST') Engine.forceWin(this.myIdx);
-        }
+        admWin() { if(this.mode === 'HOST') Game.win(this.myIdx); }
     };
 
     /**
-     * GAME ENGINE (Authoritative)
+     * GAME LOGIC (FLUXOS ENGINE)
      */
-    const Engine = {
+    const Game = {
         state: { grid: [], turn: 0, scores: [0,0,0], active: false, msg: '' },
 
-        initGame() {
-            const pCount = Net.players.length;
-            this.state.active = true;
-            this.state.turn = 0;
-            this.state.msg = '';
-            let size = App.mode === 'c4' ? 42 : (pCount === 3 ? 36 : 9);
-            this.state.grid = Array(size).fill(null);
+        init() {
+            const cnt = Net.players.length;
+            this.state.active = true; this.state.turn = 0; this.state.msg = '';
+            let sz = Core.gMode === 'c4' ? 42 : (cnt === 3 ? 36 : 9);
+            this.state.grid = Array(sz).fill(null);
         },
 
-        processMove(idx, pIdx) {
-            if(!this.state.active || this.state.turn !== pIdx) return;
-            
-            let valid = false;
-            if(App.mode === 'c4') {
+        process(idx, p) {
+            if(!this.state.active || this.state.turn !== p) return;
+            let ok = false;
+            if(Core.gMode === 'c4') {
                 let col = idx % 7;
                 for(let r=5; r>=0; r--) {
                     if(this.state.grid[r*7+col] === null) {
-                        this.state.grid[r*7+col] = pIdx; valid = true; break;
+                        this.state.grid[r*7+col] = p; ok = true; break;
                     }
                 }
             } else {
-                if(this.state.grid[idx] === null) {
-                    this.state.grid[idx] = pIdx; valid = true;
-                }
+                if(this.state.grid[idx] === null) { this.state.grid[idx] = p; ok = true; }
             }
 
-            if(valid) {
-                if(this.checkWin(pIdx)) {
-                    this.state.active = false;
-                    this.state.scores[pIdx]++;
-                    this.state.msg = `ПОБЕДА: ${Net.players[pIdx].name}`;
-                } else {
-                    this.state.turn = (this.state.turn + 1) % Net.players.length;
-                    this.state.msg = '';
-                }
-                const update = {type: 'STATE_UP', state: this.state};
-                Net.conns.forEach(c => c.send(update));
-                this.render();
+            if(ok) {
+                if(this.check(p)) this.win(p);
+                else this.state.turn = (this.state.turn + 1) % Net.players.length;
+                Net.broadcast({type: 'UP', s: this.state});
+                this.draw();
             }
         },
 
-        checkWin(p) {
-            const g = this.state.grid;
-            const sz = App.mode === 'c4' ? 7 : Math.sqrt(g.length);
-            const target = App.mode === 'c4' ? 4 : (Net.players.length === 3 ? 4 : 3);
-            const rows = g.length / sz;
+        win(p) {
+            this.state.active = false; this.state.scores[p]++;
+            this.state.msg = `WINNER: ${Net.players[p].name}`;
+        },
 
+        check(p) {
+            const g = this.state.grid;
+            const sz = Core.gMode === 'c4' ? 7 : Math.sqrt(g.length);
+            const win = Core.gMode === 'c4' ? 4 : (Net.players.length === 3 ? 4 : 3);
             for(let i=0; i<g.length; i++) {
                 if(g[i] !== p) continue;
                 for(let [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
-                    let count = 1;
-                    for(let step=1; step<target; step++) {
-                        let r = Math.floor(i/sz)+dr*step, c = (i%sz)+dc*step;
-                        if(r>=0 && r<rows && c>=0 && c<sz && g[r*sz+c] === p) count++; else break;
+                    let c = 1;
+                    for(let s=1; s<win; s++) {
+                        let r = Math.floor(i/sz)+dr*s, col = (i%sz)+dc*s;
+                        if(r>=0 && r<(g.length/sz) && col>=0 && col<sz && g[r*sz+col] === p) c++; else break;
                     }
-                    if(count === target) return true;
+                    if(c === win) return true;
                 }
             }
             return false;
         },
 
-        render() {
+        draw() {
             const b = document.getElementById('board');
-            const cols = App.mode === 'c4' ? 7 : Math.sqrt(this.state.grid.length);
+            const cols = Core.gMode === 'c4' ? 7 : Math.sqrt(this.state.grid.length);
             b.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             b.innerHTML = '';
 
             this.state.grid.forEach((v, i) => {
                 const c = document.createElement('div');
-                c.className = `cell pressable ${App.mode === 'c4' ? 'coin' : ''}`;
+                c.className = `cell press-effect ${Core.gMode === 'c4' ? 'coin' : ''}`;
                 if(v !== null) {
-                    c.classList.add('p' + (v+1));
-                    if(App.mode !== 'c4') c.innerText = (v===0?'X':(v===1?'O':'▲'));
+                    c.classList.add('p' + (v+1), 'occupied');
+                    if(Core.gMode !== 'c4') c.innerText = v === 0 ? 'X' : (v === 1 ? 'O' : '∆');
                 }
-                c.onclick = () => Net.sendMove(i);
+                c.onclick = () => {
+                    if(Net.mode === 'HOST') this.process(i, Net.myIdx);
+                    else Net.conn.send({type: 'MOVE', idx: i, p: Net.myIdx});
+                };
                 b.appendChild(c);
             });
 
-            // Scores
-            for(let i=0; i<3; i++) {
-                const pill = document.getElementById('pill-'+i);
-                if(i < Net.players.length) {
-                    pill.classList.remove('hidden');
-                    pill.classList.toggle('me', this.state.turn === i && this.state.active);
-                    pill.querySelector('span').innerText = Net.players[i].name;
-                    document.getElementById('sc-'+i).innerText = this.state.scores[i];
-                } else pill.classList.add('hidden');
-            }
-
-            const st = document.getElementById('game-status');
-            st.innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ВАШ ХОД" : `ХОД: ${Net.players[this.state.turn]?.name}`);
-            
-            if(!this.state.active && Net.role === 'HOST') document.getElementById('restart-btn').classList.remove('hidden');
-            else document.getElementById('restart-btn').classList.add('hidden');
-        },
-
-        forceWin(p) {
-            this.state.active = false; this.state.scores[p]++;
-            this.state.msg = "ADMIN WIN";
-            Net.conns.forEach(c => c.send({type: 'STATE_UP', state: this.state}));
-            this.render();
+            document.getElementById('game-info').innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ТВОЙ ХОД" : `ХОД: ${Net.players[this.state.turn]?.name}`);
+            Net.players.forEach((p, i) => {
+                document.getElementById('s-'+i).innerText = this.state.scores[i];
+                document.getElementById('p-'+i).classList.toggle('active', this.state.turn === i && this.state.active);
+            });
+            document.getElementById('btn-restart').classList.toggle('hidden', this.state.active || Net.mode !== 'HOST');
         }
     };
 
     /**
-     * APP INTERFACE CONTROLLER
+     * APP CORE
      */
-    const App = {
-        uName: '', mode: 'ttt',
-        
-        async createHost() {
-            this.uName = document.getElementById('user-nick').value || 'Host';
-            this.checkAdm(this.uName);
-            const id = Math.floor(100000 + Math.random()*900000);
-            document.getElementById('host-btn').innerText = "СОЗДАНИЕ...";
-            await Net.start(id);
-            this.showScreen('scr-lobby');
+    const Core = {
+        uName: '', gMode: 'ttt',
+        async initHost() {
+            this.uName = document.getElementById('nick-name').value || 'Host';
+            const id = Math.floor(100000 + Math.random()*900000).toString();
+            await Net.setup(id);
+            document.getElementById('display-id').innerText = id;
+            Net.players = [{name: this.uName, idx: 0}];
+            this.switch('view-lobby');
+            document.getElementById('host-ui').classList.remove('hidden');
+            this.updLobby();
+            if(this.uName === 'An6not') document.getElementById('adm').classList.remove('hidden');
         },
-
-        joinHost() {
-            const tid = document.getElementById('join-id').value;
-            if(!tid) return alert("Введите ID!");
-            this.uName = document.getElementById('user-nick').value || 'Guest';
-            this.checkAdm(this.uName);
-            Net.start(Math.floor(Math.random()*900000));
-            Net.join(tid);
-            document.getElementById('guest-wait').classList.remove('hidden');
-            this.showScreen('scr-lobby');
+        async initJoin() {
+            const code = document.getElementById('join-code').value;
+            if(!code) return;
+            this.uName = document.getElementById('nick-name').value || 'Guest';
+            Net.mode = 'GUEST';
+            await Net.setup((Math.random()*1000).toFixed(0));
+            Net.conn = Net.peer.connect(code);
+            Net.conn.on('open', () => {
+                Net.conn.send({type: 'JOIN', name: this.uName});
+                this.switch('view-lobby');
+                document.getElementById('guest-ui').classList.remove('hidden');
+            });
         },
-
-        checkAdm(n) { if(n === 'An6not') document.getElementById('adm-ui').classList.remove('hidden'); },
-
         setMode(m) {
-            this.mode = m;
-            document.querySelectorAll('#host-controls .btn').forEach(b => b.classList.remove('btn-blue'));
-            document.getElementById('m-'+m).classList.add('btn-blue');
+            this.gMode = m;
+            document.querySelectorAll('#host-ui .btn').forEach(b => b.classList.remove('btn-main'));
+            document.getElementById('m-'+m).classList.add('btn-main');
         },
-
-        updateLobbyUI() {
-            const list = document.getElementById('player-list');
-            list.innerHTML = Net.players.map(p => `
-                <div class="p-badge ${p.name === this.uName ? 'me' : ''}">
-                    <div class="p-dot" style="background:var(--p${p.idx+1})"></div>
-                    <b>${p.name}</b> ${p.name === this.uName ? '(ВЫ)' : ''}
+        updLobby() {
+            document.getElementById('player-list').innerHTML = Net.players.map(p => `
+                <div class="player-row" style="border:1px solid ${p.name === this.uName ? 'var(--accent)' : 'transparent'}">
+                    <div style="width:10px; height:10px; border-radius:50%; background:var(--p${p.idx+1})"></div>
+                    <b>${p.name}</b>
                 </div>
             `).join('');
         },
-
-        showScreen(id) {
-            document.querySelectorAll('.app > div').forEach(s => s.classList.add('hidden'));
+        switch(id) {
+            document.querySelectorAll('.app > div').forEach(v => v.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
     };
