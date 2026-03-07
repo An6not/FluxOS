@@ -3,303 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS Ultimate GameHub</title>
+    <title>FluxOS P2P Multi-Engine FIX</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg: #030712;
+            --bg: #020617;
             --glass: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.08);
             --accent: #38bdf8;
-            --p1: #f43f5e;
-            --p2: #10b981;
-            --p3: #f59e0b;
-            --text: #f1f5f9;
-            --radius: 20px;
+            --p1: #ef4444; --p2: #10b981; --p3: #f59e0b;
+            --text: #f8fafc;
+            --radius: 24px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'SF Pro Display', system-ui; -webkit-tap-highlight-color: transparent; user-select: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent),
-                              radial-gradient(circle at bottom left, rgba(244, 63, 94, 0.05), transparent);
-            overflow: hidden;
-        }
-
-        .viewport { width: 100%; max-width: 500px; margin: 0 auto; padding: 15px; flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-
+        .container { width: 100%; max-width: 480px; margin: 0 auto; padding: 20px; flex: 1; display: flex; flex-direction: column; }
         .glass { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: var(--radius); }
 
-        /* Lobby */
-        .header { text-align: center; padding: 20px 0; }
-        h1 { font-size: 28px; font-weight: 900; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* Lobby UI */
+        .header { text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 28px; font-weight: 900; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        .player-selector { display: flex; gap: 8px; margin-bottom: 15px; }
-        .sel-btn { flex: 1; padding: 12px; border-radius: 12px; background: var(--glass); border: 1px solid var(--glass-border); color: #94a3b8; font-weight: 700; cursor: pointer; }
-        .sel-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 15px; }
+        .m-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--glass); color: #94a3b8; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .m-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
-        .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .game-card { padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .game-card { padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
         .game-card.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.1); }
-        .game-card i { font-size: 24px; display: block; margin-bottom: 5px; }
-        .game-card span { font-size: 13px; font-weight: 600; }
+        .game-card i { display: block; font-style: normal; font-size: 20px; margin-bottom: 5px; }
+        .game-card span { font-size: 11px; font-weight: 600; text-transform: uppercase; }
 
-        .net-info { padding: 20px; text-align: center; margin-top: auto; }
-        .pin-display { font-size: 32px; font-weight: 900; color: var(--accent); letter-spacing: 4px; margin: 10px 0; }
-
-        input { width: 100%; padding: 14px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #fff; text-align: center; font-size: 18px; margin-bottom: 10px; outline: none; }
-        .btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; }
+        .conn-box { padding: 20px; text-align: center; margin-top: auto; }
+        .my-id-text { font-size: 32px; font-weight: 900; color: var(--accent); letter-spacing: 3px; margin: 10px 0; }
+        input { width: 100%; padding: 15px; border-radius: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: #fff; text-align: center; margin-bottom: 10px; font-size: 16px; outline: none; }
+        .btn { width: 100%; padding: 16px; border-radius: 15px; border: none; font-weight: 800; cursor: pointer; transition: 0.2s; }
         .btn-primary { background: var(--accent); color: var(--bg); }
 
-        /* Game UI */
-        .score-row { display: flex; gap: 8px; margin-bottom: 15px; }
-        .score-item { flex: 1; padding: 10px; border-radius: 12px; text-align: center; font-size: 12px; border-bottom: 3px solid transparent; }
+        /* Game Board */
+        .score-bar { display: flex; gap: 8px; margin-bottom: 15px; }
+        .score-item { flex: 1; padding: 10px; border-radius: 12px; text-align: center; font-size: 12px; border-bottom: 4px solid transparent; }
         .score-item b { display: block; font-size: 18px; }
 
-        .board { display: grid; gap: 6px; margin: 0 auto; width: 100%; }
-        .cell { aspect-ratio: 1/1; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; transition: 0.2s; }
-        .cell.p1 { color: var(--p1); }
-        .cell.p2 { color: var(--p2); }
-        .cell.p3 { color: var(--p3); }
-        .cell.coin { border-radius: 50%; }
-        .cell.coin.p1 { background: var(--p1); }
-        .cell.coin.p2 { background: var(--p2); }
-        .cell.coin.p3 { background: var(--p3); }
-        .cell.fading { opacity: 0.3; filter: grayscale(1); }
+        .board { display: grid; gap: 5px; margin: 0 auto; width: 100%; max-width: 400px; }
+        .cell { aspect-ratio: 1/1; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; transition: 0.1s; }
+        .cell.p1 { color: var(--p1); } .cell.p2 { color: var(--p2); } .cell.p3 { color: var(--p3); }
+        .cell.coin { border-radius: 50%; border: 3px solid rgba(0,0,0,0.2); }
+        .cell.coin.p1 { background: var(--p1); } .cell.coin.p2 { background: var(--p2); } .cell.coin.p3 { background: var(--p3); }
+        .cell.fading { opacity: 0.3; filter: blur(1px); }
 
-        #reaction-zone { width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; border-radius: var(--radius); cursor: pointer; }
-
+        .status-msg { padding: 15px; text-align: center; font-weight: 700; margin-bottom: 15px; }
         .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div class="viewport">
+<div class="container">
     <div id="scr-lobby" class="fade-in">
-        <div class="header"><h1>FluxOS P2P Ultimate</h1></div>
+        <div class="header"><h1>FluxOS GameHub</h1></div>
 
-        <div class="player-selector glass">
-            <button class="sel-btn active" id="sel-2" onclick="App.setPlayers(2)">2 Игрока</button>
-            <button class="sel-btn" id="sel-3" onclick="App.setPlayers(3)">3 Игрока</button>
+        <div class="mode-selector glass">
+            <button class="m-btn active" id="btn-p2" onclick="App.setLimit(2)">2 PLAYERS</button>
+            <button class="m-btn" id="btn-p3" onclick="App.setLimit(3)">3 PLAYERS</button>
         </div>
 
         <div class="game-grid">
-            <div class="game-card glass active" onclick="App.setMode('ttt')" id="m-ttt"><i>⭕</i><span>Крестики</span></div>
-            <div class="game-card glass" onclick="App.setMode('ghost')" id="m-ghost"><i>👻</i><span>Призрак</span></div>
-            <div class="game-card glass" onclick="App.setMode('c4')" id="m-c4"><i>🔴</i><span>Connect 4</span></div>
-            <div class="game-card glass" onclick="App.setMode('mem')" id="m-mem"><i>🃏</i><span>Память</span></div>
-            <div class="game-card glass" onclick="App.setMode('rps')" id="m-rps"><i>✌️</i><span>К.Н.Б.</span></div>
-            <div class="game-card glass" onclick="App.setMode('react')" id="m-react"><i>⚡</i><span>Реакция</span></div>
+            <div class="game-card glass active" id="m-ttt" onclick="App.setMode('ttt')"><i>⭕</i><span>Крестики</span></div>
+            <div class="game-card glass" id="m-ghost" onclick="App.setMode('ghost')"><i>👻</i><span>Призрак</span></div>
+            <div class="game-card glass" id="m-c4" onclick="App.setMode('c4')"><i>🔴</i><span>7x6 C4</span></div>
+            <div class="game-card glass" id="m-mem" onclick="App.setMode('mem')"><i>🧠</i><span>Память</span></div>
+            <div class="game-card glass" id="m-rps" onclick="App.setMode('rps')"><i>✂️</i><span>К.Н.Б.</span></div>
+            <div class="game-card glass" id="m-tap" onclick="App.setMode('tap')"><i>⚡</i><span>Tap War</span></div>
         </div>
 
-        <div class="net-info glass">
-            <p style="font-size: 11px; color: #94a3b8;">ВАШ ID ДЛЯ ПОДКЛЮЧЕНИЯ</p>
-            <div class="pin-display" id="my-id">------</div>
-            <input type="number" id="target-id" placeholder="ВВЕДИТЕ ID ХОСТА" inputmode="numeric">
-            <button class="btn btn-primary" onclick="Net.connect()">ВОЙТИ В ХОББИ</button>
+        <div class="conn-box glass">
+            <p style="font-size: 12px; color: #64748b;">ВАШ ID:</p>
+            <div class="my-id-text" id="display-id">------</div>
+            <input type="number" id="input-host-id" placeholder="ID ХОСТА" inputmode="numeric">
+            <button class="btn btn-primary" onclick="Net.connect()">ПОДКЛЮЧИТЬСЯ</button>
         </div>
     </div>
 
-    <div id="scr-game" class="hidden fade-in">
-        <div class="score-row">
-            <div class="score-item glass" style="border-color: var(--p1)">P1<b id="s-1">0</b></div>
-            <div class="score-item glass" style="border-color: var(--p2)">P2<b id="s-2">0</b></div>
-            <div id="s-box-3" class="score-item glass hidden" style="border-color: var(--p3)">P3<b id="s-3">0</b></div>
+    <div id="scr-game" class="hidden">
+        <div class="score-bar">
+            <div class="score-item glass" style="border-color: var(--p1)">P1<b id="score-0">0</b></div>
+            <div class="score-item glass" style="border-color: var(--p2)">P2<b id="score-1">0</b></div>
+            <div id="box-p3" class="score-item glass hidden" style="border-color: var(--p3)">P3<b id="score-2">0</b></div>
         </div>
 
-        <div id="status" class="glass" style="padding: 12px; text-align: center; font-weight: 700; margin-bottom: 15px; font-size: 14px;">Ожидание...</div>
+        <div id="status" class="status-msg glass">Ожидание игроков...</div>
 
-        <div id="game-arena" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
-            <div id="board-root" class="board"></div>
-            <div id="reaction-zone" class="hidden">ЖДИ...</div>
+        <div id="arena" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div id="board" class="board"></div>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button class="btn glass" onclick="location.reload()" style="flex: 1;">ВЫХОД</button>
-            <button id="btn-restart" class="btn btn-primary hidden" onclick="App.restart()" style="flex: 2;">ЗАНОВО</button>
+            <button id="btn-restart" class="btn btn-primary hidden" onclick="App.restart()" style="flex: 2;">ЕЩЕ РАЗ</button>
         </div>
     </div>
 </div>
 
 <script>
     /**
-     * NETWORK ORCHESTRATOR
+     * NETWORK CORE (FIXED RELAY)
      */
     const Net = {
         peer: null, conns: [], role: 'HOST', myIdx: 0,
         init() {
-            const sid = Math.floor(100000 + Math.random() * 900000).toString();
-            this.peer = new Peer('flux-' + sid);
-            this.peer.on('open', id => document.getElementById('my-id').innerText = sid);
-            this.peer.on('connection', c => {
-                if(this.conns.length >= 2) return c.close();
-                this.conns.push(c);
-                this.bind(c);
-            });
+            const id = Math.floor(100000 + Math.random() * 900000).toString();
+            this.peer = new Peer('flux-' + id);
+            this.peer.on('open', () => document.getElementById('display-id').innerText = id);
+            this.peer.on('connection', c => this.handleInbound(c));
         },
         connect() {
-            const tid = document.getElementById('target-id').value;
+            const tid = document.getElementById('input-host-id').value;
             if(!tid) return;
             this.role = 'GUEST';
             const c = this.peer.connect('flux-' + tid);
-            this.bind(c);
+            this.handleInbound(c);
         },
-        bind(c) {
+        handleInbound(c) {
             c.on('open', () => {
-                App.showGame();
                 if(this.role === 'HOST') {
-                    this.send({ type: 'INIT', mode: App.mode, players: App.playerLimit });
+                    if(this.conns.length >= 2) return c.close();
+                    this.conns.push(c);
+                    // Назначаем ID Гостю (1 или 2)
+                    c.send({ type: 'ASSIGN_ID', idx: this.conns.length, limit: App.playerLimit, mode: App.mode });
+                    App.checkLobby();
                 }
+                App.showUI();
             });
-            c.on('data', data => Router.handle(data, c));
+            c.on('data', data => Router.onData(data, c));
+            c.on('close', () => location.reload());
         },
-        send(data) {
+        broadcast(data) {
             this.conns.forEach(c => c.send(data));
         }
     };
 
     /**
-     * APPLICATION CONTROLLER
+     * ROUTER (STATE SYNC)
+     */
+    const Router = {
+        onData(data, conn) {
+            if(data.type === 'ASSIGN_ID') {
+                Net.myIdx = data.idx;
+                App.playerLimit = data.limit;
+                App.mode = data.mode;
+                App.updateUI();
+            }
+            if(data.type === 'START') {
+                App.mode = data.mode;
+                App.playerLimit = data.limit;
+                App.start();
+            }
+            if(data.type === 'MOVE') {
+                Games[App.mode].apply(data.idx, data.p);
+                // Relay if Host
+                if(Net.role === 'HOST') Net.broadcast(data);
+            }
+            if(data.type === 'SYNC_MEM') {
+                Games.mem.deck = data.deck;
+                Games.mem.render();
+            }
+            if(data.type === 'RESTART') App.start();
+            if(data.type === 'WIN') {
+                App.active = false;
+                document.getElementById('status').innerText = data.msg;
+                document.getElementById('btn-restart').classList.remove('hidden');
+                if(Net.role === 'HOST') Net.broadcast(data);
+            }
+        }
+    };
+
+    /**
+     * APP ENGINE
      */
     const App = {
-        mode: 'ttt', playerLimit: 2, playersJoined: 1, active: false, turn: 0,
-        scores: [0, 0, 0],
-        setPlayers(n) {
+        mode: 'ttt', playerLimit: 2, turn: 0, active: false,
+        setLimit(n) {
             this.playerLimit = n;
-            document.getElementById('sel-2').classList.toggle('active', n === 2);
-            document.getElementById('sel-3').classList.toggle('active', n === 3);
-            if(n === 3) document.getElementById('m-react').classList.add('hidden');
-            else document.getElementById('m-react').classList.remove('hidden');
+            document.getElementById('btn-p2').classList.toggle('active', n === 2);
+            document.getElementById('btn-p3').classList.toggle('active', n === 3);
         },
         setMode(m) {
             this.mode = m;
             document.querySelectorAll('.game-card').forEach(c => c.classList.remove('active'));
             document.getElementById('m-' + m).classList.add('active');
         },
-        showGame() {
+        showUI() {
             document.getElementById('scr-lobby').classList.add('hidden');
             document.getElementById('scr-game').classList.remove('hidden');
-            document.getElementById('s-box-3').classList.toggle('hidden', this.playerLimit < 3);
-            if(Net.role === 'HOST') this.checkStart();
+            this.updateUI();
         },
-        checkStart() {
-            this.playersJoined = Net.conns.length + 1;
-            if(this.playersJoined === this.playerLimit) {
+        updateUI() {
+            document.getElementById('box-p3').classList.toggle('hidden', this.playerLimit < 3);
+        },
+        checkLobby() {
+            if(Net.conns.length + 1 === this.playerLimit) {
+                Net.broadcast({ type: 'START', mode: this.mode, limit: this.playerLimit });
                 this.start();
-                Net.send({ type: 'START', mode: this.mode, limit: this.playerLimit });
             }
         },
         start() {
-            this.active = true; this.turn = 0;
+            this.active = true;
+            this.turn = 0;
             document.getElementById('btn-restart').classList.add('hidden');
-            document.getElementById('board-root').classList.remove('hidden');
-            document.getElementById('reaction-zone').classList.add('hidden');
             Games[this.mode].init();
             this.updateStatus();
         },
-        updateStatus(msg) {
+        updateStatus() {
             const st = document.getElementById('status');
-            if(msg) { st.innerText = msg; return; }
-            const isMe = (Net.role === 'HOST' && this.turn === 0) || (Net.role === 'GUEST' && this.turn === Net.myIdx);
-            st.innerText = isMe ? "ВАШ ХОД" : `ОЖИДАНИЕ ИГРОКА ${this.turn + 1}`;
+            const isMe = (Net.myIdx === this.turn);
+            st.innerText = isMe ? "ВАШ ХОД!" : `ХОД ИГРОКА ${this.turn + 1}...`;
             st.style.color = isMe ? 'var(--accent)' : '#fff';
         },
-        restart() {
-            if(Net.role === 'HOST') { this.start(); Net.send({ type: 'RESTART' }); }
-        }
-    };
-
-    const Router = {
-        handle(data, conn) {
-            switch(data.type) {
-                case 'INIT': App.mode = data.mode; App.playerLimit = data.players; break;
-                case 'START': Net.myIdx = Net.conns.indexOf(conn) + 1; App.playerLimit = data.limit; App.mode = data.mode; App.start(); break;
-                case 'MOVE': Games[App.mode].apply(data.idx, data.p); break;
-                case 'RESTART': App.start(); break;
-                case 'WIN': 
-                    App.active = false;
-                    App.updateStatus(data.msg);
-                    document.getElementById('btn-restart').classList.remove('hidden');
-                    break;
-            }
-            if(Net.role === 'HOST') Net.send(data);
-        }
+        restart() { if(Net.role === 'HOST') { this.start(); Net.broadcast({ type: 'RESTART' }); } }
     };
 
     /**
-     * GAMES LOGIC MODULES
+     * GAMES LOGIC
      */
     const Games = {
-        // --- TIC TAC TOE (Adaptive) ---
+        isMyTurn() { return App.active && Net.myIdx === App.turn; },
+
+        // --- TTT (3x3 or 6x6) ---
         ttt: {
             grid: [], size: 3,
             init() {
                 this.size = App.playerLimit === 3 ? 6 : 3;
-                const b = document.getElementById('board-root');
+                this.grid = Array(this.size * this.size).fill(null);
+                const b = document.getElementById('board');
                 b.style.gridTemplateColumns = `repeat(${this.size}, 1fr)`;
                 b.innerHTML = '';
-                this.grid = Array(this.size * this.size).fill(null);
                 for(let i=0; i<this.grid.length; i++) {
                     const c = document.createElement('div');
                     c.className = 'cell glass';
-                    c.onclick = () => this.tap(i);
+                    c.onclick = () => {
+                        if(Games.isMyTurn() && !this.grid[i]) {
+                            this.apply(i, Net.myIdx);
+                            Net.role === 'HOST' ? Net.broadcast({type:'MOVE', idx:i, p:Net.myIdx}) : Net.peer.connections[Object.keys(Net.peer.connections)[0]][0].send({type:'MOVE', idx:i, p:Net.myIdx});
+                        }
+                    };
                     b.appendChild(c);
                 }
             },
-            tap(i) {
-                if(!App.active || this.grid[i] || !this.isMyTurn()) return;
-                this.apply(i, App.turn);
-                Net.send({ type: 'MOVE', idx: i, p: App.turn });
-            },
             apply(i, p) {
                 this.grid[i] = p;
-                const cells = document.getElementById('board-root').children;
-                const sym = ['X', 'O', '▲'];
-                cells[i].innerText = sym[p];
+                const cells = document.getElementById('board').children;
+                cells[i].innerText = ['X', 'O', '▲'][p];
                 cells[i].classList.add('p' + (p+1));
                 if(this.checkWin(p)) {
-                    App.active = false;
-                    const msg = `ИГРОК ${p+1} ВЫИГРАЛ!`;
-                    App.updateStatus(msg);
-                    if(Net.role === 'HOST') Net.send({ type: 'WIN', msg });
-                    document.getElementById('btn-restart').classList.remove('hidden');
+                    if(Net.role === 'HOST') Router.onData({type:'WIN', msg: `ИГРОК ${p+1} ВЫИГРАЛ!`});
                 } else {
                     App.turn = (App.turn + 1) % App.playerLimit;
                     App.updateStatus();
                 }
             },
-            isMyTurn() { return (Net.role === 'HOST' && App.turn === 0) || (Net.role === 'GUEST' && App.turn === Net.myIdx); },
             checkWin(p) {
                 const s = this.size, target = App.playerLimit === 3 ? 4 : 3;
                 for(let i=0; i<this.grid.length; i++) {
                     if(this.grid[i] !== p) continue;
                     for(let [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
-                        let c = 1;
+                        let count = 1;
                         for(let step=1; step<target; step++) {
-                            let r = Math.floor(i/s) + dr*step, col = (i%s) + dc*step;
-                            if(r>=0 && r<s && col>=0 && col<s && this.grid[r*s+col] === p) c++; else break;
+                            let r = Math.floor(i/s) + dr*step, c = (i%s) + dc*step;
+                            if(r>=0 && r<s && c>=0 && c<s && this.grid[r*s+c] === p) count++; else break;
                         }
-                        if(c === target) return true;
+                        if(count === target) return true;
                     }
                 }
                 return false;
             }
         },
 
-        // --- GHOST MODE ---
+        // --- GHOST ---
         ghost: {
             queues: [[], [], []],
             init() { Games.ttt.init.call(this); this.queues = [[], [], []]; },
-            tap(i) { Games.ttt.tap.call(this, i); },
             apply(i, p) {
-                const cells = document.getElementById('board-root').children;
+                const cells = document.getElementById('board').children;
                 this.queues[p].push(i);
                 if(this.queues[p].length > 3) {
                     const old = this.queues[p].shift();
@@ -313,31 +299,34 @@
                 this.queues.forEach(q => { if(q.length === 3) cells[q[0]].classList.add('fading'); });
 
                 if(Games.ttt.checkWin.call(this, p)) {
-                    App.active = false; document.getElementById('btn-restart').classList.remove('hidden');
-                    App.updateStatus(`ПРИЗРАК ${p+1} ПОБЕДИЛ!`);
-                } else { App.turn = (App.turn + 1) % App.playerLimit; App.updateStatus(); }
-            },
-            isMyTurn() { return Games.ttt.isMyTurn(); }
+                    if(Net.role === 'HOST') Router.onData({type:'WIN', msg: `ПРИЗРАК ${p+1} ПОБЕДИЛ!`});
+                } else {
+                    App.turn = (App.turn + 1) % App.playerLimit;
+                    App.updateStatus();
+                }
+            }
         },
 
-        // --- CONNECT 4 (7x6 Gravity) ---
+        // --- CONNECT 4 (7x6) ---
         c4: {
-            cols: 7, rows: 6,
+            grid: [],
             init() {
-                const b = document.getElementById('board-root');
-                b.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
+                this.grid = Array(42).fill(null);
+                const b = document.getElementById('board');
+                b.style.gridTemplateColumns = `repeat(7, 1fr)`;
                 b.innerHTML = '';
-                this.grid = Array(this.cols * this.rows).fill(null);
-                for(let i=0; i<this.grid.length; i++) {
+                for(let i=0; i<42; i++) {
                     const c = document.createElement('div');
                     c.className = 'cell glass coin';
                     c.onclick = () => {
-                        let col = i % this.cols;
+                        if(!Games.isMyTurn()) return;
+                        let col = i % 7;
                         for(let r=5; r>=0; r--) {
                             if(this.grid[r*7+col] === null) {
-                                if(!Games.ttt.isMyTurn()) return;
-                                Net.send({ type: 'MOVE', idx: r*7+col, p: App.turn });
-                                this.apply(r*7+col, App.turn);
+                                const targetIdx = r*7+col;
+                                this.apply(targetIdx, Net.myIdx);
+                                const pkt = {type:'MOVE', idx:targetIdx, p:Net.myIdx};
+                                Net.role === 'HOST' ? Net.broadcast(pkt) : Net.peer.connections[Object.keys(Net.peer.connections)[0]][0].send(pkt);
                                 break;
                             }
                         }
@@ -347,136 +336,119 @@
             },
             apply(idx, p) {
                 this.grid[idx] = p;
-                document.getElementById('board-root').children[idx].classList.add('p'+(p+1));
-                if(Games.ttt.checkWin.call({grid: this.grid, size: 7}, p)) {
-                    App.active = false; App.updateStatus(`CONNECT 4: P${p+1}`);
-                    document.getElementById('btn-restart').classList.remove('hidden');
-                } else { App.turn = (App.turn + 1) % App.playerLimit; App.updateStatus(); }
+                document.getElementById('board').children[idx].classList.add('p' + (p+1));
+                if(Games.ttt.checkWin.call({grid:this.grid, size:7}, p)) {
+                    if(Net.role === 'HOST') Router.onData({type:'WIN', msg: `C4: ПОБЕДА P${p+1}`});
+                } else {
+                    App.turn = (App.turn + 1) % App.playerLimit;
+                    App.updateStatus();
+                }
             }
         },
 
         // --- MEMORY ---
         mem: {
-            flipped: [], deck: [],
+            deck: [], flipped: [],
             init() {
-                const b = document.getElementById('board-root');
+                const b = document.getElementById('board');
                 b.style.gridTemplateColumns = 'repeat(4, 1fr)';
-                b.innerHTML = ''; this.flipped = [];
-                const emojis = ['🔥','💎','🌀','💀','⚡','🍀','🍎','🍄'];
                 if(Net.role === 'HOST') {
-                    this.deck = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
-                    Net.send({ type: 'MOVE', idx: -1, p: -1, extra: this.deck });
+                    const em = ['🔥','💎','🌀','💀','⚡','🍀','🍎','🍄'];
+                    this.deck = [...em, ...em].sort(() => Math.random() - 0.5);
+                    Net.broadcast({ type: 'SYNC_MEM', deck: this.deck });
                 }
                 this.render();
             },
             render() {
-                const b = document.getElementById('board-root');
-                b.innerHTML = '';
-                this.deck.forEach((e, i) => {
+                const b = document.getElementById('board'); b.innerHTML = '';
+                this.deck.forEach((v, i) => {
                     const c = document.createElement('div');
-                    c.className = 'cell glass';
-                    c.innerText = '❓';
+                    c.className = 'cell glass'; c.innerText = '❓';
                     c.onclick = () => {
-                        if(!Games.ttt.isMyTurn() || this.flipped.length >= 2 || c.classList.contains('matched')) return;
-                        this.apply(i, App.turn);
-                        Net.send({ type: 'MOVE', idx: i, p: App.turn });
+                        if(Games.isMyTurn() && this.flipped.length < 2 && c.innerText === '❓') {
+                            this.apply(i, Net.myIdx);
+                            const pkt = {type:'MOVE', idx:i, p:Net.myIdx};
+                            Net.role === 'HOST' ? Net.broadcast(pkt) : Net.peer.connections[Object.keys(Net.peer.connections)[0]][0].send(pkt);
+                        }
                     };
                     b.appendChild(c);
                 });
             },
-            apply(idx, p) {
-                if(idx === -1) { this.deck = arguments[2].extra; this.render(); return; }
-                const cells = document.getElementById('board-root').children;
-                cells[idx].innerText = this.deck[idx];
-                this.flipped.push({ idx, val: this.deck[idx] });
-
+            apply(i, p) {
+                const cells = document.getElementById('board').children;
+                cells[i].innerText = this.deck[i];
+                this.flipped.push({idx:i, val:this.deck[i]});
                 if(this.flipped.length === 2) {
-                    const [a, b] = this.flipped;
-                    if(a.val === b.val) {
-                        cells[a.idx].classList.add('matched'); cells[b.idx].classList.add('matched');
+                    if(this.flipped[0].val === this.flipped[1].val) {
                         this.flipped = [];
                     } else {
                         setTimeout(() => {
-                            cells[a.idx].innerText = '❓'; cells[b.idx].innerText = '❓';
+                            cells[this.flipped[0].idx].innerText = '❓';
+                            cells[this.flipped[1].idx].innerText = '❓';
                             this.flipped = [];
                             App.turn = (App.turn + 1) % App.playerLimit;
                             App.updateStatus();
                         }, 1000);
+                        return;
                     }
+                }
+                // Check Win
+                if([...cells].every(c => c.innerText !== '❓')) {
+                   if(Net.role === 'HOST') Router.onData({type:'WIN', msg: 'ПАМЯТЬ ОЧИЩЕНА!'});
                 }
             }
         },
 
         // --- RPS ---
         rps: {
-            choices: [],
+            votes: [],
             init() {
-                this.choices = Array(App.playerLimit).fill(null);
-                const b = document.getElementById('board-root');
-                b.style.gridTemplateColumns = '1fr';
+                this.votes = Array(App.playerLimit).fill(null);
+                const b = document.getElementById('board'); b.style.gridTemplateColumns = '1fr';
                 b.innerHTML = `
-                    <div style="display:flex; gap:10px; justify-content:center;">
-                        <button class="btn glass" onclick="Games.rps.tap('R')">🪨</button>
-                        <button class="btn glass" onclick="Games.rps.tap('P')">📄</button>
-                        <button class="btn glass" onclick="Games.rps.tap('S')">✂️</button>
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                        <div class="cell glass" onclick="Games.rps.vote('🪨')">🪨</div>
+                        <div class="cell glass" onclick="Games.rps.vote('📄')">📄</div>
+                        <div class="cell glass" onclick="Games.rps.vote('✂️')">✂️</div>
                     </div>
                 `;
             },
-            tap(val) {
-                const myIdx = Net.role === 'HOST' ? 0 : Net.myIdx;
-                if(this.choices[myIdx]) return;
-                this.apply(myIdx, val);
-                Net.send({ type: 'MOVE', idx: myIdx, p: val });
+            vote(v) {
+                if(this.votes[Net.myIdx]) return;
+                this.apply(Net.myIdx, v);
+                const pkt = {type:'MOVE', idx:Net.myIdx, p:v};
+                Net.role === 'HOST' ? Net.broadcast(pkt) : Net.peer.connections[Object.keys(Net.peer.connections)[0]][0].send(pkt);
             },
-            apply(idx, val) {
-                this.choices[idx] = val;
-                App.updateStatus(`ИГРОК ${idx+1} ВЫБРАЛ`);
-                if(!this.choices.includes(null)) {
-                    const res = this.choices.join(' vs ');
-                    App.updateStatus(res);
-                    App.active = false;
-                    document.getElementById('btn-restart').classList.remove('hidden');
+            apply(i, v) {
+                this.votes[i] = v;
+                App.updateStatus(`P${i+1} ВЫБРАЛ...`);
+                if(!this.votes.includes(null)) {
+                    Router.onData({type:'WIN', msg: this.votes.join(' vs ')});
                 }
             }
         },
 
-        // --- REACTION (2 Players Only) ---
-        react: {
+        // --- TAP WAR ---
+        tap: {
+            scores: [0, 0, 0],
             init() {
-                document.getElementById('board-root').classList.add('hidden');
-                const rz = document.getElementById('reaction-zone');
-                rz.classList.remove('hidden');
-                rz.style.background = 'var(--glass)';
-                rz.innerText = 'ЖДИ ЗЕЛЕНОГО...';
-                if(Net.role === 'HOST') {
-                    setTimeout(() => {
-                        const time = Date.now();
-                        Net.send({ type: 'MOVE', idx: 999, p: time });
-                        this.apply(999, time);
-                    }, 2000 + Math.random() * 3000);
-                }
+                this.scores = [0, 0, 0];
+                const b = document.getElementById('board'); b.style.gridTemplateColumns = '1fr';
+                b.innerHTML = `<div class="cell glass" style="height:200px; font-size:40px;" onclick="Games.tap.hit()">TAP!!!</div>`;
             },
-            apply(idx, time) {
-                const rz = document.getElementById('reaction-zone');
-                if(idx === 999) {
-                    rz.style.background = 'var(--p2)';
-                    rz.innerText = 'ЖМИ!!!';
-                    this.startTime = time;
-                } else {
-                    const diff = Date.now() - this.startTime;
-                    App.updateStatus(`P${idx+1}: ${diff}ms`);
-                    App.active = false;
-                    document.getElementById('btn-restart').classList.remove('hidden');
+            hit() {
+                this.apply(Net.myIdx, ++this.scores[Net.myIdx]);
+                const pkt = {type:'MOVE', idx:this.scores[Net.myIdx], p:Net.myIdx};
+                Net.role === 'HOST' ? Net.broadcast(pkt) : Net.peer.connections[Object.keys(Net.peer.connections)[0]][0].send(pkt);
+            },
+            apply(val, p) {
+                this.scores[p] = val;
+                document.getElementById('score-' + p).innerText = val;
+                if(val >= 50) {
+                    if(Net.role === 'HOST') Router.onData({type:'WIN', msg: `P${p+1} ВЫИГРАЛ ПО КЛИКАМ!`});
                 }
             }
         }
-    };
-
-    document.getElementById('reaction-zone').onclick = () => {
-        if(!App.active || document.getElementById('reaction-zone').style.background === 'var(--glass)') return;
-        const myIdx = Net.role === 'HOST' ? 0 : Net.myIdx;
-        Net.send({ type: 'MOVE', idx: myIdx, p: 'click' });
-        Games.react.apply(myIdx, 'click');
     };
 
     Net.init();
