@@ -1,57 +1,382 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flux Games P2P</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --card: #16161a;
+            --accent: #007aff;
+            --x-color: #ff3b30;
+            --o-color: #34c759;
+            --text: #ffffff;
+            --subtext: #8e8e93;
+        }
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-<title>OriginWEB OS</title>
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-<link rel="stylesheet" href="style.css">
+        .viewport {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: relative;
+        }
 
-<!-- GSAP -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+        /* Анимации появления */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-<!-- GSAP Flip -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js"></script>
+        .screen {
+            animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
 
-<!-- Lucide -->
-<script src="https://unpkg.com/lucide@latest"></script>
+        h1 { font-size: 32px; margin-bottom: 10px; font-weight: 800; }
+        p { color: var(--subtext); margin-bottom: 30px; }
 
-<!-- OGL -->
-<script src="https://cdn.jsdelivr.net/npm/ogl@0.0.32/dist/ogl.min.js"></script>
+        /* Кнопки меню */
+        .menu-grid { display: grid; gap: 15px; }
+        
+        .game-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
 
+        .game-card:active { transform: scale(0.97); background: #1c1c21; }
+        .game-card h3 { font-size: 18px; }
+        .game-card span { font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
+
+        /* Сетка игры */
+        .board {
+            display: grid;
+            gap: 10px;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .cell {
+            background: var(--card);
+            aspect-ratio: 1/1;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 800;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .cell:active { transform: scale(0.9); }
+        .cell.x { color: var(--x-color); animation: markPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2); }
+        .cell.o { color: var(--o-color); animation: markPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2); }
+        .cell.fading { opacity: 0.4; filter: blur(1px); } /* Для режима призрака */
+
+        @keyframes markPop {
+            0% { transform: scale(0.5) rotate(-20deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        /* Сетевой интерфейс */
+        .input-group { margin-top: 20px; background: var(--card); padding: 20px; border-radius: 24px; }
+        input {
+            width: 100%;
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+            letter-spacing: 5px;
+        }
+
+        .status-msg { text-align: center; margin: 15px 0; font-weight: 600; min-height: 24px; }
+
+        .hidden { display: none !important; }
+
+        .back-btn { background: none; border: none; color: var(--accent); font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 20px; text-align: left; width: fit-content; }
+    </style>
 </head>
-
 <body>
 
-<div id="phone-shell">
+<div class="viewport">
+    
+    <div id="screen-main" class="screen">
+        <h1>Flux Games</h1>
+        <p>Выбери режим игры</p>
+        <div class="menu-grid">
+            <div class="game-card" onclick="openLobby('classic')">
+                <div>
+                    <h3>Классика 3x3</h3>
+                    <p style="margin:0; font-size:13px">Обычные крестики нолики</p>
+                </div>
+                <span>P2P</span>
+            </div>
+            <div class="game-card" onclick="openLobby('mega')">
+                <div>
+                    <h3>Мега Поле 5x5</h3>
+                    <p style="margin:0; font-size:13px">Собери 4 в ряд</p>
+                </div>
+                <span>NEW</span>
+            </div>
+            <div class="game-card" onclick="openLobby('ghost')">
+                <div>
+                    <h3>Призрак (Ghost)</h3>
+                    <p style="margin:0; font-size:13px">Ходы исчезают со временем</p>
+                </div>
+                <span>PRO</span>
+            </div>
+        </div>
+    </div>
 
-<div id="dynamic-island"></div>
+    <div id="screen-lobby" class="screen hidden">
+        <button class="back-btn" onclick="showScreen('main')">← Назад</button>
+        <h2 id="lobby-title">Ожидание...</h2>
+        <div class="input-group">
+            <div id="host-view">
+                <p style="text-align:center">Код для друга:</p>
+                <h1 id="my-id-display" style="text-align:center; color: var(--accent); letter-spacing: 4px;">------</h1>
+            </div>
+            <div style="margin: 20px 0; border-top: 1px solid #333; padding-top: 20px;">
+                <input type="number" id="join-id-input" placeholder="000000">
+                <button class="game-card" style="width:100%; background: var(--accent); color: white;" onclick="joinByCode()">
+                    <h3 style="width:100%; text-align:center">Подключиться</h3>
+                </button>
+            </div>
+        </div>
+    </div>
 
-<div id="os-layer">
-
-<div id="wallpaper"></div>
-
-<div id="apps-grid"></div>
-
-<div id="app-container"></div>
-
-<div id="dock">
-
-<canvas id="liquid-canvas"></canvas>
-
-<div id="dock-icons"></div>
+    <div id="screen-game" class="screen hidden">
+        <div class="status-msg" id="game-status">Ваш ход</div>
+        <div id="game-board-container" style="flex:1; display:flex; align-items:center;">
+            <div id="board" class="board"></div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px">
+            <button class="game-card" style="flex:1" onclick="resetGame()"><span>Заново</span></button>
+            <button class="game-card" style="flex:1" onclick="location.reload()"><span>Выйти</span></button>
+        </div>
+    </div>
 
 </div>
 
-<div id="home-bar"></div>
+<script>
+    let peer, conn;
+    let myId = "";
+    let gameMode = 'classic'; // classic, mega, ghost
+    let mySymbol = 'X';
+    let currentTurn = 'X';
+    let boardState = [];
+    let moveHistory = []; // Для Ghost режима
+    let isGameOver = false;
 
-</div>
+    // --- Навигация ---
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById('screen-' + id).classList.remove('hidden');
+    }
 
-</div>
+    function openLobby(mode) {
+        gameMode = mode;
+        document.getElementById('lobby-title').innerText = "Режим: " + mode.toUpperCase();
+        showScreen('lobby');
+        initPeer();
+    }
 
-<script src="main.js"></script>
+    // --- Сетевой код ---
+    function initPeer() {
+        if (peer) return;
+        const shortId = Math.floor(100000 + Math.random() * 900000).toString();
+        peer = new Peer('flux-' + shortId);
 
+        peer.on('open', (id) => {
+            myId = shortId;
+            document.getElementById('my-id-display').innerText = shortId;
+        });
+
+        peer.on('connection', (c) => {
+            conn = c;
+            mySymbol = 'X';
+            setupConnection();
+        });
+
+        peer.on('error', (e) => { if(e.type === 'unavailable-id') initPeer(); });
+    }
+
+    function joinByCode() {
+        const code = document.getElementById('join-id-input').value;
+        if(code.length !== 6) return;
+        
+        if(!peer) peer = new Peer();
+        conn = peer.connect('flux-' + code);
+        mySymbol = 'O';
+        setupConnection();
+    }
+
+    function setupConnection() {
+        conn.on('open', () => {
+            // Синхронизируем режим игры при подключении
+            if(mySymbol === 'X') {
+                conn.send({ type: 'INIT_MODE', mode: gameMode });
+            }
+            showScreen('game');
+            buildBoard();
+        });
+
+        conn.on('data', (data) => {
+            if(data.type === 'INIT_MODE') {
+                gameMode = data.mode;
+            } else if(data.type === 'MOVE') {
+                applyMove(data.index, data.symbol);
+            } else if(data.type === 'RESET') {
+                resetLocal();
+            }
+        });
+    }
+
+    // --- Игровая логика ---
+    function buildBoard() {
+        const boardEl = document.getElementById('board');
+        let size = (gameMode === 'mega') ? 5 : 3;
+        boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        boardEl.innerHTML = '';
+        
+        boardState = Array(size * size).fill(null);
+        moveHistory = [];
+        isGameOver = false;
+        currentTurn = 'X';
+
+        for(let i=0; i < size*size; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.onclick = () => handleCellClick(i);
+            boardEl.appendChild(cell);
+        }
+        updateStatus();
+    }
+
+    function handleCellClick(index) {
+        if(isGameOver || boardState[index] || currentTurn !== mySymbol) return;
+        
+        applyMove(index, mySymbol);
+        conn.send({ type: 'MOVE', index: index, symbol: mySymbol });
+    }
+
+    function applyMove(index, symbol) {
+        boardState[index] = symbol;
+        const cells = document.querySelectorAll('.cell');
+        cells[index].innerText = symbol;
+        cells[index].classList.add(symbol.toLowerCase());
+
+        // Ghost Mode Logic: оставляем только последние 3 хода каждого игрока
+        if(gameMode === 'ghost') {
+            moveHistory.push({index, symbol});
+            let playerMoves = moveHistory.filter(m => m.symbol === symbol);
+            if(playerMoves.length > 3) {
+                let oldMove = playerMoves.shift();
+                boardState[oldMove.index] = null;
+                cells[oldMove.index].innerText = '';
+                cells[oldMove.index].classList.remove(symbol.toLowerCase(), 'fading');
+                // Обновляем историю
+                moveHistory = moveHistory.filter(m => !(m.index === oldMove.index && m.symbol === oldMove.symbol));
+            }
+            // Подсветка затухания для следующего исчезающего хода
+            let nextPlayerMoves = moveHistory.filter(m => m.symbol === symbol);
+            if(nextPlayerMoves.length === 3) {
+                cells[nextPlayerMoves[0].index].classList.add('fading');
+            }
+        }
+
+        if(checkWinner()) {
+            isGameOver = true;
+            document.getElementById('game-status').innerText = (symbol === mySymbol ? "ПОБЕДА! 🎉" : "ПРОИГРЫШ");
+        } else if(!boardState.includes(null) && gameMode !== 'ghost') {
+            isGameOver = true;
+            document.getElementById('game-status').innerText = "НИЧЬЯ";
+        } else {
+            currentTurn = (currentTurn === 'X' ? 'O' : 'X');
+            updateStatus();
+        }
+    }
+
+    function checkWinner() {
+        const size = (gameMode === 'mega') ? 5 : 3;
+        const target = (gameMode === 'mega') ? 4 : 3; // В 5х5 нужно 4 в ряд
+
+        // Проверка по горизонтали, вертикали и диагоналям
+        for(let i=0; i<boardState.length; i++) {
+            if(!boardState[i]) continue;
+            let s = boardState[i];
+            
+            // Направления: вправо, вниз, вниз-вправо, вниз-влево
+            let dirs = [[0,1], [1,0], [1,1], [1,-1]];
+            for(let d of dirs) {
+                let count = 1;
+                let r = Math.floor(i / size);
+                let c = i % size;
+                for(let step=1; step<target; step++) {
+                    let nr = r + d[0]*step;
+                    let nc = c + d[1]*step;
+                    if(nr>=0 && nr<size && nc>=0 && nc<size && boardState[nr*size + nc] === s) {
+                        count++;
+                    } else break;
+                }
+                if(count >= target) return true;
+            }
+        }
+        return false;
+    }
+
+    function updateStatus() {
+        if(isGameOver) return;
+        const msg = (currentTurn === mySymbol) ? "Твой ход" : "Ждем соперника...";
+        document.getElementById('game-status').innerText = msg;
+        document.getElementById('game-status').style.color = (currentTurn === mySymbol) ? "var(--accent)" : "white";
+    }
+
+    function resetGame() {
+        resetLocal();
+        conn.send({ type: 'RESET' });
+    }
+
+    function resetLocal() {
+        buildBoard();
+    }
+</script>
 </body>
 </html>
