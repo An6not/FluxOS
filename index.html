@@ -3,87 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS V3.1 TRIPLE FIX</title>
+    <title>FluxOS V3.2 FINAL FIX</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg: #050505;
-            --acc: #007aff;
-            --p1: #ff3b30; --p2: #34c759; --p3: #ffcc00;
-            --card: rgba(255,255,255,0.03);
-            --brd: rgba(255,255,255,0.1);
+            --bg: #0a0c10; --acc: #2f81f7;
+            --p1: #f85149; --p2: #3fb950; --p3: #d29922;
+            --card: #161b22; --brd: #30363d;
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; user-select: none; }
+        body { background: var(--bg); color: #c9d1d9; height: 100vh; overflow: hidden; display: flex; justify-content: center; }
+        .app { width: 100%; max-width: 440px; padding: 20px; display: flex; flex-direction: column; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; display: flex; justify-content: center; }
-
-        .app { width: 100%; max-width: 440px; padding: 20px; display: flex; flex-direction: column; position: relative; }
-
-        /* ANIMATIONS */
-        .tap { transition: transform 0.1s; cursor: pointer; }
-        .tap:active { transform: scale(0.95); filter: brightness(1.2); }
-        .fade { animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .glass { background: var(--card); border: 1px solid var(--brd); border-radius: 28px; padding: 25px; backdrop-filter: blur(20px); }
+        .tap { transition: 0.1s; cursor: pointer; }
+        .tap:active { transform: scale(0.95); }
+        .glass { background: var(--card); border: 1px solid var(--brd); border-radius: 24px; padding: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
 
         input { 
-            width: 100%; padding: 18px; border-radius: 16px; background: #111; border: 1px solid var(--brd); 
+            width: 100%; padding: 18px; border-radius: 14px; background: #010409; border: 1px solid var(--brd); 
             color: #fff; font-size: 16px; margin-bottom: 12px; outline: none;
         }
-        input:focus { border-color: var(--acc); }
+        .btn { padding: 18px; border-radius: 14px; border: none; font-weight: 700; width: 100%; font-size: 15px; }
+        .btn-blue { background: var(--acc); color: white; }
+        .btn-dark { background: #21262d; color: #fff; border: 1px solid var(--brd); }
+        .btn-sel { border: 2px solid var(--acc) !important; background: rgba(47, 129, 247, 0.15) !important; color: #fff !important; }
 
-        .btn { padding: 18px; border-radius: 16px; border: none; font-weight: 700; width: 100%; font-size: 15px; }
-        .btn-blue { background: var(--acc); color: white; box-shadow: 0 8px 20px rgba(0,122,255,0.3); }
-        .btn-dark { background: #1a1a1a; color: #fff; border: 1px solid var(--brd); }
-        .btn-active { border: 2px solid var(--acc) !important; background: rgba(0,122,255,0.1); }
-
-        /* LOBBY */
         .big-id { font-size: 44px; font-weight: 900; color: var(--acc); text-align: center; letter-spacing: 6px; margin: 15px 0; }
-        .p-row { display: flex; align-items: center; gap: 12px; padding: 14px; background: rgba(255,255,255,0.02); border-radius: 15px; margin-bottom: 8px; border: 1px solid transparent; }
-        .p-row.me { border-color: var(--acc); }
+        .p-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 8px; border: 1px solid transparent; }
+        .p-row.me { border-color: var(--acc); background: rgba(47, 129, 247, 0.05); }
         .dot { width: 12px; height: 12px; border-radius: 50%; }
 
-        /* GAME */
-        .board { display: grid; gap: 6px; background: var(--brd); padding: 6px; border-radius: 20px; width: 100%; }
+        .board { display: grid; gap: 6px; background: var(--brd); padding: 6px; border-radius: 18px; width: 100%; }
         .cell { 
-            aspect-ratio: 1/1; background: #000; border-radius: 12px; 
+            aspect-ratio: 1/1; background: #0d1117; border-radius: 10px; 
             display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;
-            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .cell.pop { transform: scale(1.05); }
         .cell.p1 { color: var(--p1); } .cell.p2 { color: var(--p2); } .cell.p3 { color: var(--p3); }
-        
-        .cell.coin { border-radius: 50%; }
-        .cell.coin.p1 { background: var(--p1); box-shadow: 0 0 15px var(--p1); }
-        .cell.coin.p2 { background: var(--p green); box-shadow: 0 0 15px var(--p2); }
-        .cell.coin.p3 { background: var(--p3); box-shadow: 0 0 15px var(--p3); }
-
         .hidden { display: none !important; }
-        .status { text-align: center; color: var(--acc); font-weight: 800; margin: 15px 0; min-height: 20px; }
+        .status { text-align: center; color: var(--acc); font-weight: 800; margin: 15px 0; min-height: 20px; font-size: 13px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <div id="scr-auth" class="glass fade" style="margin-top:auto; margin-bottom:auto;">
-        <h1 style="text-align:center; margin-bottom:25px; letter-spacing:-1px;">FluxOS <span style="color:var(--acc)">V3.1</span></h1>
+    <div id="scr-auth" class="glass" style="margin: auto 0">
+        <h1 style="text-align:center; margin-bottom:20px;">FluxOS <span style="color:var(--acc)">V3.2</span></h1>
         <input type="text" id="nick" placeholder="Имя игрока">
         <button class="btn btn-blue tap" onclick="App.init(true)">СОЗДАТЬ ХОСТ</button>
         <div style="display:flex; gap:10px; margin-top:12px;">
-            <input type="number" id="join-id" placeholder="Код хоста" style="margin-bottom:0; flex:1">
+            <input type="number" id="join-id" placeholder="Код" style="margin-bottom:0; flex:1">
             <button class="btn btn-dark tap" style="flex:1" onclick="App.init(false)">ВОЙТИ</button>
         </div>
     </div>
 
-    <div id="scr-lobby" class="hidden glass fade">
+    <div id="scr-lobby" class="hidden glass">
         <p style="text-align:center; font-size:10px; opacity:0.5;">ID КОМНАТЫ</p>
-        <div class="big-id" id="id-view">------</div>
-        
-        <div id="players-list" style="margin:20px 0"></div>
-
+        <div class="big-id" id="id-view">000000</div>
+        <div id="p-list" style="margin:15px 0"></div>
         <div id="host-ui" class="hidden">
-            <p style="font-size:10px; margin-bottom:10px; opacity:0.6;">РЕЖИМ ИГРЫ:</p>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:15px;">
                 <button class="btn btn-dark tap" id="m-ttt" onclick="App.setMode('ttt')">6X6</button>
                 <button class="btn btn-dark tap" id="m-c4" onclick="App.setMode('c4')">7X6</button>
@@ -91,23 +68,20 @@
             </div>
             <button class="btn btn-blue tap" id="go-btn" onclick="Net.startGame()">ЗАПУСТИТЬ</button>
         </div>
-        
-        <div id="guest-ui" class="hidden" style="text-align:center; padding:10px">
-            <div class="status">ОЖИДАНИЕ ХОСТА...</div>
-        </div>
+        <div id="guest-ui" class="hidden"><div class="status">ОЖИДАНИЕ ХОСТА...</div></div>
     </div>
 
-    <div id="scr-game" class="hidden fade" style="height:100%; display:flex; flex-direction:column">
+    <div id="scr-game" class="hidden" style="height:100%; display:flex; flex-direction:column">
         <div style="display:flex; gap:8px; margin-bottom:15px">
-            <div id="slot-0" class="p-row" style="flex:1; margin-bottom:0; padding:10px;"><b>P1</b>: <span id="s-0">0</span></div>
-            <div id="slot-1" class="p-row" style="flex:1; margin-bottom:0; padding:10px;"><b>P2</b>: <span id="s-1">0</span></div>
-            <div id="slot-2" class="p-row hidden" style="flex:1; margin-bottom:0; padding:10px;"><b>P3</b>: <span id="s-2">0</span></div>
+            <div id="slot-0" class="p-row" style="flex:1; margin-bottom:0; padding:8px;"><b>P1</b>: <span id="s-0">0</span></div>
+            <div id="slot-1" class="p-row" style="flex:1; margin-bottom:0; padding:8px;"><b>P2</b>: <span id="s-1">0</span></div>
+            <div id="slot-2" class="p-row" style="flex:1; margin-bottom:0; padding:8px;"><b>P3</b>: <span id="s-2">0</span></div>
         </div>
-        <div class="status" id="game-info">СИНХРОНИЗАЦИЯ</div>
+        <div class="status" id="game-info">ЗАГРУЗКА</div>
         <div style="flex:1; display:flex; align-items:center; justify-content:center">
             <div id="board" class="board"></div>
         </div>
-        <div style="display:flex; gap:10px; margin-top:20px; padding-bottom:10px">
+        <div style="display:flex; gap:10px; margin-top:15px; padding-bottom:10px">
             <button class="btn btn-dark tap" onclick="location.reload()">МЕНЮ</button>
             <button id="re-btn" class="btn btn-blue tap hidden" onclick="Net.startGame()">РЕВАНШ</button>
         </div>
@@ -117,49 +91,35 @@
 <script>
     const Net = {
         peer: null, conns: [], conn: null, isHost: true, players: [], myIdx: 0,
-        
         async open(id) {
-            if(this.peer) this.peer.destroy();
             return new Promise(res => {
-                this.peer = new Peer('FLX-V3-' + id);
+                this.peer = new Peer('FLX-V32-' + id);
                 this.peer.on('open', res);
                 this.peer.on('connection', c => {
                     this.conns.push(c);
                     c.on('data', d => this.onData(d, c));
                 });
                 this.peer.on('error', e => {
-                    console.error(e);
-                    alert("Ошибка ID! Страница будет перезагружена.");
-                    location.reload();
+                    if(this.isHost) { alert("Ошибка ID! Попробуйте другой код."); location.reload(); }
                 });
             });
         },
-
         onData(d, c) {
             if(this.isHost) {
                 if(d.type === 'JOIN') {
                     if(this.players.length >= 3) return;
                     this.players.push({name: d.name, idx: this.players.length});
-                    this.broadcast({type: 'SYNC_LOBBY', p: this.players});
+                    this.broadcast({type: 'SYNC', p: this.players});
                     App.renderLobby();
                 }
                 if(d.type === 'TAP') Engine.move(d.i, d.p);
             } else {
-                if(d.type === 'SYNC_LOBBY') {
-                    this.players = d.p;
-                    this.myIdx = this.players.findIndex(x => x.name === App.nick);
-                    App.renderLobby();
-                }
-                if(d.type === 'START') {
-                    App.mode = d.m; Engine.state = d.s;
-                    App.show('scr-game'); Engine.draw();
-                }
+                if(d.type === 'SYNC') { this.players = d.p; this.myIdx = this.players.findIndex(x => x.name === App.nick); App.renderLobby(); }
+                if(d.type === 'START') { App.mode = d.m; Engine.state = d.s; App.show('scr-game'); Engine.draw(); }
                 if(d.type === 'UP') { Engine.state = d.s; Engine.draw(); }
             }
         },
-
         broadcast(data) { this.conns.forEach(c => c.send(data)); },
-        
         startGame() {
             Engine.init();
             this.broadcast({type: 'START', m: App.mode, s: Engine.state});
@@ -169,75 +129,50 @@
 
     const Engine = {
         state: { grid: [], turn: 0, scores: [0,0,0], active: false, msg: '' },
-
         init() {
-            const pCount = Net.players.length;
             this.state.active = true; this.state.turn = 0; this.state.msg = '';
-            let sz = App.mode === 'c4' ? 42 : (pCount === 3 ? 36 : 9);
+            let sz = App.mode === 'c4' ? 42 : (Net.players.length === 3 ? 36 : 9);
             this.state.grid = Array(sz).fill(null);
         },
-
         move(i, p) {
             if(!this.state.active || this.state.turn !== p) return;
-            let valid = false;
-            if(App.mode === 'c4') {
-                let col = i % 7;
-                for(let r=5; r>=0; r--) {
-                    if(this.state.grid[r*7+col] === null) { this.state.grid[r*7+col] = p; valid = true; break; }
-                }
-            } else {
-                if(this.state.grid[i] === null) { this.state.grid[i] = p; valid = true; }
-            }
-
-            if(valid) {
-                if(this.check(p)) {
-                    this.state.active = false; this.state.scores[p]++;
-                    this.state.msg = "ПОБЕДА: " + Net.players[p].name;
-                } else {
-                    this.state.turn = (this.state.turn + 1) % Net.players.length;
-                }
-                Net.broadcast({type: 'UP', s: this.state});
-                this.draw();
-            }
+            if(this.state.grid[i] !== null) return;
+            this.state.grid[i] = p;
+            if(this.check(p)) { this.state.active = false; this.state.scores[p]++; this.state.msg = "ПОБЕДА: " + Net.players[p].name; }
+            else { this.state.turn = (this.state.turn + 1) % Net.players.length; }
+            Net.broadcast({type: 'UP', s: this.state});
+            this.draw();
         },
-
         check(p) {
-            const g = this.state.grid; const sz = App.mode === 'c4' ? 7 : Math.sqrt(g.length);
-            const win = App.mode === 'c4' ? 4 : (Net.players.length === 3 ? 4 : 3);
+            const g = this.state.grid; const sz = Math.sqrt(g.length);
+            const win = Net.players.length === 3 ? 4 : 3;
             for(let i=0; i<g.length; i++) {
                 if(g[i] !== p) continue;
                 for(let [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
                     let c = 1;
                     for(let s=1; s<win; s++) {
                         let r = Math.floor(i/sz)+dr*s, col = (i%sz)+dc*s;
-                        if(r>=0 && r<(g.length/sz) && col>=0 && col<sz && g[r*sz+col] === p) c++; else break;
+                        if(r>=0 && r<sz && col>=0 && col<sz && g[r*sz+col] === p) c++; else break;
                     }
                     if(c === win) return true;
                 }
-            }
-            return false;
+            } return false;
         },
-
         draw() {
             const b = document.getElementById('board');
-            const cols = App.mode === 'c4' ? 7 : Math.sqrt(this.state.grid.length);
+            const cols = Math.sqrt(this.state.grid.length);
             b.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             b.innerHTML = '';
-
             this.state.grid.forEach((v, i) => {
                 const c = document.createElement('div');
-                c.className = `cell tap ${App.mode === 'c4' ? 'coin' : ''}`;
+                c.className = 'cell';
                 if(v !== null) {
-                    c.classList.add('p' + (v+1), 'pop');
-                    if(App.mode !== 'c4') c.innerText = v === 0 ? 'X' : (v === 1 ? 'O' : '∆');
+                    c.classList.add('p' + (v+1));
+                    c.innerText = v === 0 ? 'X' : (v === 1 ? 'O' : '∆');
                 }
-                c.onclick = () => {
-                    if(Net.isHost) Engine.move(i, Net.myIdx);
-                    else Net.conn.send({type: 'TAP', i, p: Net.myIdx});
-                };
+                c.onclick = () => { if(Net.isHost) Engine.move(i, Net.myIdx); else Net.conn.send({type: 'TAP', i, p: Net.myIdx}); };
                 b.appendChild(c);
             });
-
             document.getElementById('game-info').innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ТВОЙ ХОД" : "ЖДЕМ ХОД...");
             Net.players.forEach((p, i) => {
                 document.getElementById('s-'+i).innerText = this.state.scores[i];
@@ -253,50 +188,37 @@
             this.nick = document.getElementById('nick').value || 'User' + Math.floor(Math.random()*99);
             Net.isHost = host;
             const code = host ? Math.floor(100000 + Math.random()*900000).toString() : document.getElementById('join-id').value;
-            
             await Net.open(code);
             document.getElementById('id-view').innerText = code;
-            
             if(host) {
                 Net.players = [{name: this.nick, idx: 0}];
                 document.getElementById('host-ui').classList.remove('hidden');
             } else {
-                Net.conn = Net.peer.connect('FLX-V3-' + code);
-                Net.conn.on('open', () => {
-                    Net.conn.send({type: 'JOIN', name: this.nick});
-                    document.getElementById('guest-ui').classList.remove('hidden');
-                });
+                Net.conn = Net.peer.connect('FLX-V32-' + code);
+                Net.conn.on('open', () => { Net.conn.send({type: 'JOIN', name: this.nick}); document.getElementById('guest-ui').classList.remove('hidden'); });
             }
-            this.renderLobby();
-            this.show('scr-lobby');
-            this.setMode('ttt');
+            this.renderLobby(); this.show('scr-lobby'); this.setMode('ttt');
         },
         setMode(m) {
             this.mode = m;
-            document.querySelectorAll('#host-ui .btn').forEach(b => b.classList.remove('btn-active'));
-            document.getElementById('m-' + m).classList.add('btn-active');
+            document.querySelectorAll('#host-ui .btn').forEach(b => b.classList.remove('btn-sel'));
+            document.getElementById('m-' + m).classList.add('btn-sel');
         },
         renderLobby() {
-            document.getElementById('players-list').innerHTML = Net.players.map(p => `
+            document.getElementById('p-list').innerHTML = Net.players.map(p => `
                 <div class="p-row ${p.name === this.nick ? 'me' : ''}">
                     <div class="dot" style="background:var(--p${p.idx+1})"></div>
                     <b>${p.name}</b>
                 </div>
             `).join('');
-            if(Net.isHost) {
-                document.getElementById('go-btn').innerText = Net.players.length > 1 ? `ИГРАТЬ (${Net.players.length} ИГР.)` : "ЖДЕМ ИГРОКОВ...";
-            }
-            // Показ слотов для 3 игроков
             for(let i=0; i<3; i++) {
                 const el = document.getElementById('slot-'+i);
-                if(Net.players[i]) el.classList.remove('hidden');
+                if(Net.players[i]) { el.classList.remove('hidden'); el.querySelector('b').innerText = Net.players[i].name.substring(0,5); }
                 else el.classList.add('hidden');
             }
+            if(Net.isHost) document.getElementById('go-btn').innerText = Net.players.length > 1 ? `ЗАПУСТИТЬ (${Net.players.length} чел.)` : "ЖДЕМ ИГРОКОВ...";
         },
-        show(id) {
-            document.querySelectorAll('.app > div').forEach(d => d.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        }
+        show(id) { document.querySelectorAll('.app > div').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
     };
 </script>
 </body>
