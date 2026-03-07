@@ -3,311 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS P2P Industrial</title>
+    <title>FluxOS P2P Stable</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg: #02040a;
-            --card: rgba(13, 17, 23, 0.8);
-            --border: rgba(48, 54, 61, 0.8);
+            --bg: #05070a;
+            --card: #0d1117;
+            --border: #30363d;
             --accent: #2f81f7;
             --p1: #f85149; --p2: #3fb950; --p3: #d29922;
-            --text: #c9d1d9;
-            --radius: 20px;
+            --text: #f0f6fc;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; justify-content: center; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; justify-content: center; overflow: hidden; }
 
-        .app { width: 100%; max-width: 450px; height: 100%; display: flex; flex-direction: column; padding: 15px; position: relative; }
-        .glass { background: var(--card); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: var(--radius); }
+        .app { width: 100%; max-width: 440px; display: flex; flex-direction: column; padding: 20px; position: relative; }
 
-        /* Login */
-        .scr { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 15px; }
-        input { width: 100%; padding: 16px; border-radius: 12px; background: #0d1117; border: 1px solid var(--border); color: #fff; font-size: 16px; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--accent); }
-        .btn { padding: 16px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-blue { background: var(--accent); color: white; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: white; }
-        .btn:active { transform: scale(0.96); filter: brightness(1.2); }
+        /* Press Effect */
+        .pressable { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .pressable:active { transform: scale(0.92); filter: brightness(1.3); }
 
-        /* Lobby */
-        .id-card { padding: 20px; text-align: center; }
-        .id-num { font-size: 32px; font-weight: 800; color: var(--accent); letter-spacing: 5px; margin: 10px 0; }
-        .p-list { margin: 15px 0; }
-        .p-item { padding: 12px; border-radius: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.03); display: flex; align-items: center; gap: 10px; border: 1px solid transparent; }
-        .p-item.me { border-color: var(--accent); }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .glass { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
 
-        /* Game UI */
-        .header { display: flex; gap: 10px; margin-bottom: 15px; }
-        .score { flex: 1; padding: 10px; border-radius: 12px; text-align: center; border-bottom: 3px solid transparent; }
-        .score.active { background: rgba(255,255,255,0.05); border-bottom-color: var(--accent); }
-        .score b { display: block; font-size: 18px; }
+        input { width: 100%; padding: 16px; border-radius: 12px; background: #010409; border: 1px solid var(--border); color: #fff; font-size: 16px; margin-bottom: 15px; outline: none; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.2); }
 
-        .board-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
-        .board { display: grid; gap: 5px; width: 100%; background: var(--border); padding: 5px; border-radius: 12px; }
-        .cell { aspect-ratio: 1/1; background: var(--bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; transition: 0.1s; }
-        .cell:active { background: #1f242c; transform: scale(0.9); }
+        .btn { padding: 16px; border-radius: 12px; border: none; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-blue { background: var(--accent); color: #fff; width: 100%; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: #fff; flex: 1; }
+
+        /* Lobby Info */
+        .id-val { font-size: 36px; font-weight: 800; color: var(--accent); text-align: center; margin: 15px 0; letter-spacing: 6px; text-shadow: 0 0 20px rgba(47, 129, 247, 0.3); }
+        .p-badge { display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 8px; border: 1px solid transparent; }
+        .p-badge.me { border-color: var(--accent); background: rgba(47, 129, 247, 0.05); }
+        .p-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* Board Styling */
+        .board { display: grid; gap: 8px; background: var(--border); padding: 8px; border-radius: 16px; width: 100%; }
+        .cell { aspect-ratio: 1/1; background: var(--bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; position: relative; }
         .cell.p1 { color: var(--p1); } .cell.p2 { color: var(--p2); } .cell.p3 { color: var(--p3); }
-        .cell.coin { border-radius: 50%; }
-        .cell.coin.p1 { background: var(--p1); box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
-        .cell.coin.p2 { background: var(--p2); box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
-        .cell.coin.p3 { background: var(--p3); box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
-
-        /* Admin */
-        .adm-btn { position: absolute; bottom: 80px; right: 20px; width: 44px; height: 44px; border-radius: 22px; background: var(--p1); display: flex; align-items: center; justify-content: center; z-index: 99; cursor: pointer; }
-
-        .status { text-align: center; font-weight: 600; margin-top: 15px; height: 20px; }
-        .hidden { display: none !important; }
         
-        /* RPS Specific */
-        .rps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+        /* Connect 4 specific */
+        .cell.coin { border-radius: 50%; border: 4px solid rgba(255,255,255,0.05); }
+        .cell.coin.p1 { background: var(--p1); box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
+        .cell.coin.p2 { background: var(--p2); box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
+        .cell.coin.p3 { background: var(--p3); box-shadow: inset 0 0 15px rgba(0,0,0,0.4); }
+
+        .status { text-align: center; font-weight: 700; height: 24px; margin: 15px 0; color: var(--accent); }
+
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Admin Visual */
+        .adm-trigger { position: absolute; bottom: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: var(--p1); opacity: 0.5; display: flex; align-items: center; justify-content: center; z-index: 1000; }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <div id="scr-login" class="scr">
-        <h1 style="text-align:center; font-size: 32px; letter-spacing: -1px;">FluxOS <span style="color:var(--accent)">P2P</span></h1>
-        <input type="text" id="nick" placeholder="Введите никнейм" maxlength="12">
-        <button class="btn btn-blue" onclick="App.host()">СОЗДАТЬ ХОСТ</button>
-        <div style="display:flex; gap:10px;">
-            <input type="number" id="hid" placeholder="ID Хоста" style="flex:2">
-            <button class="btn btn-outline" style="flex:1" onclick="App.join()">ВОЙТИ</button>
+    <div id="scr-login" class="fade-in" style="margin-top: auto; margin-bottom: auto;">
+        <h1 style="text-align:center; font-size: 42px; margin-bottom: 30px;">Flux<span style="color:var(--accent)">OS</span></h1>
+        <input type="text" id="user-nick" placeholder="Введите имя..." maxlength="10">
+        <button class="btn btn-blue pressable" onclick="App.createHost()" id="host-btn">СОЗДАТЬ ЛОББИ</button>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <input type="number" id="join-id" placeholder="ID Хоста" style="margin-bottom:0; flex: 2;">
+            <button class="btn btn-outline pressable" style="flex: 1;" onclick="App.joinHost()">ВХОД</button>
         </div>
     </div>
 
-    <div id="scr-lobby" class="scr hidden">
-        <div class="glass id-card">
-            <p style="font-size: 12px; opacity: 0.6;">ID КОМНАТЫ</p>
-            <div class="id-num" id="id-disp">000000</div>
-            <div class="p-list" id="p-list"></div>
+    <div id="scr-lobby" class="hidden fade-in">
+        <div class="glass">
+            <p style="text-align:center; font-size: 11px; opacity: 0.5;">ID ВАШЕЙ КОМНАТЫ</p>
+            <div class="id-val" id="disp-id">LOADING</div>
             
-            <div id="host-opt" class="hidden" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
-                <p style="font-size:11px;">ВЫБЕРИТЕ РЕЖИМ:</p>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
-                    <button class="btn btn-outline" id="m-ttt" onclick="App.setM('ttt')">3x3</button>
-                    <button class="btn btn-outline" id="m-c4" onclick="App.setM('c4')">7x6</button>
-                    <button class="btn btn-outline" id="m-rps" onclick="App.setM('rps')">КНБ</button>
+            <div id="player-list" style="margin: 20px 0;"></div>
+
+            <div id="host-controls" class="hidden">
+                <p style="font-size: 11px; margin-bottom: 10px; opacity: 0.7;">ВЫБЕРИТЕ РЕЖИМ ИГРЫ:</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+                    <button class="btn btn-outline pressable" id="m-ttt" onclick="App.setMode('ttt')">3X3</button>
+                    <button class="btn btn-outline pressable" id="m-c4" onclick="App.setMode('c4')">7X6</button>
+                    <button class="btn btn-outline pressable" id="m-rps" onclick="App.setMode('rps')">КНБ</button>
                 </div>
-                <button class="btn btn-blue" id="launch-btn" onclick="Net.launch()">ЗАПУСТИТЬ</button>
+                <button class="btn btn-blue pressable" onclick="Net.broadcastStart()">НАЧАТЬ ИГРУ</button>
             </div>
-            <p id="guest-msg" class="hidden" style="color:var(--accent); font-size:13px; margin-top:15px;">Ожидание команды от хоста...</p>
+            
+            <div id="guest-wait" class="hidden" style="text-align:center; padding: 20px;">
+                <div class="status">Ожидание выбора хоста...</div>
+            </div>
         </div>
     </div>
 
-    <div id="scr-game" class="scr hidden">
-        <div class="header glass">
-            <div id="s-0" class="score"><span>P1</span><b id="sc-0">0</b></div>
-            <div id="s-1" class="score"><span>P2</span><b id="sc-1">0</b></div>
-            <div id="s-2" class="score hidden"><span>P3</span><b id="sc-2">0</b></div>
+    <div id="scr-game" class="hidden fade-in" style="height: 100%; display: flex; flex-direction: column;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div id="pill-0" class="p-badge" style="flex:1"><span>P1</span>: <b id="sc-0">0</b></div>
+            <div id="pill-1" class="p-badge" style="flex:1"><span>P2</span>: <b id="sc-1">0</b></div>
+            <div id="pill-2" class="p-badge hidden" style="flex:1"><span>P3</span>: <b id="sc-2">0</b></div>
         </div>
-        <div class="board-wrap">
+
+        <div class="status" id="game-status">СИНХРОНИЗАЦИЯ</div>
+
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
             <div id="board" class="board"></div>
         </div>
-        <div id="status" class="status">Синхронизация...</div>
-        <button id="re-btn" class="btn btn-blue hidden" style="margin-top:10px;" onclick="Net.launch()">ИГРАТЬ СНОВА</button>
-        <button class="btn btn-outline" style="margin-top:5px;" onclick="location.reload()">ВЫЙТИ</button>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
+            <button class="btn btn-outline pressable" onclick="location.reload()" style="flex: 1;">МЕНЮ</button>
+            <button id="restart-btn" class="btn btn-blue pressable hidden" onclick="Net.broadcastStart()" style="flex: 2;">РЕВАНШ</button>
+        </div>
     </div>
 
-    <div id="adm" class="adm-btn hidden" onclick="Net.admWin()">⚡</div>
+    <div id="adm-ui" class="adm-trigger hidden pressable" onclick="Net.admForceWin()">⚡</div>
 </div>
 
 <script>
+    /**
+     * NETWORK CORE (Industrial Peer-to-Peer)
+     */
     const Net = {
         peer: null, conns: [], conn: null, role: 'HOST', myIdx: 0, players: [],
-        init(id) {
-            this.peer = new Peer('flx-' + id);
-            this.peer.on('connection', c => {
+        
+        async start(customId) {
+            this.peer = new Peer('flx-' + customId);
+            
+            this.peer.on('open', (id) => {
+                document.getElementById('disp-id').innerText = id.replace('flx-', '');
+                if(this.role === 'HOST') {
+                    this.players = [{name: App.uName, idx: 0}];
+                    App.updateLobbyUI();
+                    document.getElementById('host-controls').classList.remove('hidden');
+                }
+            });
+
+            this.peer.on('connection', (c) => {
                 if(this.players.length >= 3) return c.close();
                 this.conns.push(c);
-                c.on('data', d => this.onData(d, c));
+                c.on('data', (d) => this.onData(d, c));
+            });
+
+            this.peer.on('error', (err) => {
+                console.error(err);
+                alert("Ошибка сети. Попробуйте другой ID.");
+                location.reload();
             });
         },
-        connect(tid) {
+
+        join(targetId) {
             this.role = 'GUEST';
-            this.conn = this.peer.connect('flx-' + tid);
-            this.conn.on('open', () => this.send({type: 'JOIN', name: App.name}));
-            this.conn.on('data', d => this.onData(d));
+            this.conn = this.peer.connect('flx-' + targetId);
+            this.conn.on('open', () => {
+                this.conn.send({type: 'JOIN_REQ', name: App.uName});
+            });
+            this.conn.on('data', (d) => this.onData(d));
         },
-        send(d) { this.role === 'HOST' ? this.conns.forEach(c => c.send(d)) : this.conn.send(d); },
+
         onData(d, c) {
             if(this.role === 'HOST') {
-                if(d.type === 'JOIN') {
-                    this.players.push({name: d.name, idx: this.players.length});
-                    this.send({type: 'LOBBY', p: this.players});
-                    App.updLobby();
+                if(d.type === 'JOIN_REQ') {
+                    const newIdx = this.players.length;
+                    this.players.push({name: d.name, idx: newIdx});
+                    this.syncLobby();
+                    App.updateLobbyUI();
                 }
-                if(d.type === 'MOVE') Engine.input(d.idx, d.p);
+                if(d.type === 'MOVE_REQ') Engine.processMove(d.idx, d.pIdx);
             } else {
-                if(d.type === 'LOBBY') {
+                if(d.type === 'LOBBY_SYNC') {
                     this.players = d.p;
-                    this.myIdx = this.players.findIndex(x => x.name === App.name);
-                    App.updLobby();
+                    this.myIdx = this.players.findIndex(x => x.name === App.uName);
+                    App.updateLobbyUI();
                 }
-                if(d.type === 'START') {
-                    App.mode = d.m; App.open('scr-game'); 
-                    Engine.sync(d.s);
+                if(d.type === 'GAME_START') {
+                    App.mode = d.mode;
+                    Engine.state = d.state;
+                    App.showScreen('scr-game');
+                    Engine.render();
                 }
-                if(d.type === 'UP') Engine.sync(d.s);
+                if(d.type === 'STATE_UP') {
+                    Engine.state = d.state;
+                    Engine.render();
+                }
             }
         },
-        launch() {
-            Engine.start();
-            this.send({type: 'START', m: App.mode, s: Engine.state});
-            App.open('scr-game');
+
+        syncLobby() { this.conns.forEach(c => c.send({type: 'LOBBY_SYNC', p: this.players})); },
+        
+        broadcastStart() {
+            Engine.initGame();
+            const startPkg = {type: 'GAME_START', mode: App.mode, state: Engine.state};
+            this.conns.forEach(c => c.send(startPkg));
+            App.showScreen('scr-game');
+            Engine.render();
         },
-        admWin() { if(this.role === 'HOST') Engine.win(this.myIdx); }
+
+        sendMove(idx) {
+            if(this.role === 'HOST') Engine.processMove(idx, this.myIdx);
+            else this.conn.send({type: 'MOVE_REQ', idx: idx, pIdx: this.myIdx});
+        },
+
+        admForceWin() {
+            if(this.role === 'HOST') Engine.forceWin(this.myIdx);
+        }
     };
 
+    /**
+     * GAME ENGINE (Authoritative)
+     */
     const Engine = {
         state: { grid: [], turn: 0, scores: [0,0,0], active: false, msg: '' },
-        start() {
+
+        initGame() {
             const pCount = Net.players.length;
-            this.state.active = true; this.state.turn = 0; this.state.msg = '';
+            this.state.active = true;
+            this.state.turn = 0;
+            this.state.msg = '';
             let size = App.mode === 'c4' ? 42 : (pCount === 3 ? 36 : 9);
             this.state.grid = Array(size).fill(null);
-            this.sync(this.state);
         },
-        input(idx, p) {
-            if(!this.state.active || this.state.turn !== p) return;
-            let ok = false;
+
+        processMove(idx, pIdx) {
+            if(!this.state.active || this.state.turn !== pIdx) return;
+            
+            let valid = false;
             if(App.mode === 'c4') {
                 let col = idx % 7;
                 for(let r=5; r>=0; r--) {
                     if(this.state.grid[r*7+col] === null) {
-                        this.state.grid[r*7+col] = p; ok = true; break;
+                        this.state.grid[r*7+col] = pIdx; valid = true; break;
                     }
                 }
-            } else if(App.mode === 'rps') {
-                this.state.grid[p] = idx; // idx is choice
-                if(!this.state.grid.slice(0, Net.players.length).includes(null)) {
-                    this.resolveRPS(); return;
-                }
-                this.state.turn = (this.state.turn + 1) % Net.players.length;
             } else {
                 if(this.state.grid[idx] === null) {
-                    this.state.grid[idx] = p; ok = true;
+                    this.state.grid[idx] = pIdx; valid = true;
                 }
             }
 
-            if(ok) {
-                if(this.checkWin(p)) this.win(p);
-                else this.state.turn = (this.state.turn + 1) % Net.players.length;
+            if(valid) {
+                if(this.checkWin(pIdx)) {
+                    this.state.active = false;
+                    this.state.scores[pIdx]++;
+                    this.state.msg = `ПОБЕДА: ${Net.players[pIdx].name}`;
+                } else {
+                    this.state.turn = (this.state.turn + 1) % Net.players.length;
+                    this.state.msg = '';
+                }
+                const update = {type: 'STATE_UP', state: this.state};
+                Net.conns.forEach(c => c.send(update));
+                this.render();
             }
-            Net.send({type: 'UP', s: this.state});
-            this.sync(this.state);
         },
-        resolveRPS() {
-            const res = this.state.grid.slice(0, Net.players.length);
-            this.state.active = false;
-            this.state.msg = "РЕЗУЛЬТАТ: " + res.join(' | ');
-            Net.send({type: 'UP', s: this.state});
-            this.sync(this.state);
-        },
+
         checkWin(p) {
             const g = this.state.grid;
             const sz = App.mode === 'c4' ? 7 : Math.sqrt(g.length);
-            const winLen = App.mode === 'c4' ? 4 : (Net.players.length === 3 ? 4 : 3);
+            const target = App.mode === 'c4' ? 4 : (Net.players.length === 3 ? 4 : 3);
+            const rows = g.length / sz;
+
             for(let i=0; i<g.length; i++) {
                 if(g[i] !== p) continue;
                 for(let [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
-                    let c = 1;
-                    for(let s=1; s<winLen; s++) {
-                        let r = Math.floor(i/sz)+dr*s, col = (i%sz)+dc*s;
-                        if(r>=0 && r< (g.length/sz) && col>=0 && col<sz && g[r*sz+col] === p) c++; else break;
+                    let count = 1;
+                    for(let step=1; step<target; step++) {
+                        let r = Math.floor(i/sz)+dr*step, c = (i%sz)+dc*step;
+                        if(r>=0 && r<rows && c>=0 && c<sz && g[r*sz+c] === p) count++; else break;
                     }
-                    if(c === winLen) return true;
+                    if(count === target) return true;
                 }
             }
             return false;
         },
-        win(p) {
-            this.state.active = false; this.state.scores[p]++;
-            this.state.msg = `ПОБЕДИТЕЛЬ: ${Net.players[p].name}`;
-        },
-        sync(s) {
-            this.state = s;
+
+        render() {
             const b = document.getElementById('board');
-            const pCount = Net.players.length;
-            
-            if(App.mode === 'rps') {
-                b.className = 'rps-grid'; b.style.gridTemplateColumns = '1fr 1fr 1fr';
-                b.innerHTML = ['🪨','📄','✂️'].map(v => `<div class="cell glass" onclick="App.tap('${v}')">${v}</div>`).join('');
-            } else {
-                const cols = App.mode === 'c4' ? 7 : Math.sqrt(s.grid.length);
-                b.className = 'board'; b.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-                b.innerHTML = '';
-                s.grid.forEach((v, i) => {
-                    const c = document.createElement('div');
-                    c.className = `cell ${App.mode === 'c4' ? 'coin' : ''}`;
-                    if(v !== null) {
-                        c.classList.add('p' + (v+1));
-                        c.innerText = App.mode === 'c4' ? '' : (v===0?'X':(v===1?'O':'▲'));
-                    }
-                    c.onclick = () => App.tap(i);
-                    b.appendChild(c);
-                });
+            const cols = App.mode === 'c4' ? 7 : Math.sqrt(this.state.grid.length);
+            b.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            b.innerHTML = '';
+
+            this.state.grid.forEach((v, i) => {
+                const c = document.createElement('div');
+                c.className = `cell pressable ${App.mode === 'c4' ? 'coin' : ''}`;
+                if(v !== null) {
+                    c.classList.add('p' + (v+1));
+                    if(App.mode !== 'c4') c.innerText = (v===0?'X':(v===1?'O':'▲'));
+                }
+                c.onclick = () => Net.sendMove(i);
+                b.appendChild(c);
+            });
+
+            // Scores
+            for(let i=0; i<3; i++) {
+                const pill = document.getElementById('pill-'+i);
+                if(i < Net.players.length) {
+                    pill.classList.remove('hidden');
+                    pill.classList.toggle('me', this.state.turn === i && this.state.active);
+                    pill.querySelector('span').innerText = Net.players[i].name;
+                    document.getElementById('sc-'+i).innerText = this.state.scores[i];
+                } else pill.classList.add('hidden');
             }
 
-            for(let i=0; i<3; i++) {
-                const el = document.getElementById('s-'+i);
-                if(i < pCount) {
-                    el.classList.remove('hidden');
-                    el.classList.toggle('active', s.turn === i && s.active);
-                    document.getElementById('sc-'+i).innerText = s.scores[i];
-                    el.querySelector('span').innerText = Net.players[i].name;
-                } else el.classList.add('hidden');
-            }
-            document.getElementById('status').innerText = s.msg || (s.turn === Net.myIdx ? "ВАШ ХОД" : `ХОД: ${Net.players[s.turn].name}`);
-            if(!s.active && Net.role === 'HOST') document.getElementById('re-btn').classList.remove('hidden');
-            else document.getElementById('re-btn').classList.add('hidden');
+            const st = document.getElementById('game-status');
+            st.innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ВАШ ХОД" : `ХОД: ${Net.players[this.state.turn]?.name}`);
+            
+            if(!this.state.active && Net.role === 'HOST') document.getElementById('restart-btn').classList.remove('hidden');
+            else document.getElementById('restart-btn').classList.add('hidden');
+        },
+
+        forceWin(p) {
+            this.state.active = false; this.state.scores[p]++;
+            this.state.msg = "ADMIN WIN";
+            Net.conns.forEach(c => c.send({type: 'STATE_UP', state: this.state}));
+            this.render();
         }
     };
 
+    /**
+     * APP INTERFACE CONTROLLER
+     */
     const App = {
-        name: '', mode: 'ttt',
-        host() {
-            this.name = document.getElementById('nick').value || 'Host';
-            this.checkAdm(this.name);
+        uName: '', mode: 'ttt',
+        
+        async createHost() {
+            this.uName = document.getElementById('user-nick').value || 'Host';
+            this.checkAdm(this.uName);
             const id = Math.floor(100000 + Math.random()*900000);
-            Net.init(id);
-            Net.players = [{name: this.name, idx: 0}];
-            document.getElementById('id-disp').innerText = id;
-            document.getElementById('host-opt').classList.remove('hidden');
-            this.open('scr-lobby'); this.updLobby();
+            document.getElementById('host-btn').innerText = "СОЗДАНИЕ...";
+            await Net.start(id);
+            this.showScreen('scr-lobby');
         },
-        join() {
-            const tid = document.getElementById('hid').value;
-            this.name = document.getElementById('nick').value || 'Guest';
-            this.checkAdm(this.name);
-            Net.init(Math.floor(Math.random()*900000));
-            Net.connect(tid);
-            document.getElementById('guest-msg').classList.remove('hidden');
-            this.open('scr-lobby');
+
+        joinHost() {
+            const tid = document.getElementById('join-id').value;
+            if(!tid) return alert("Введите ID!");
+            this.uName = document.getElementById('user-nick').value || 'Guest';
+            this.checkAdm(this.uName);
+            Net.start(Math.floor(Math.random()*900000));
+            Net.join(tid);
+            document.getElementById('guest-wait').classList.remove('hidden');
+            this.showScreen('scr-lobby');
         },
-        checkAdm(n) { if(n === 'An6not') document.getElementById('adm').classList.remove('hidden'); },
-        setM(m) {
+
+        checkAdm(n) { if(n === 'An6not') document.getElementById('adm-ui').classList.remove('hidden'); },
+
+        setMode(m) {
             this.mode = m;
-            document.querySelectorAll('#host-opt .btn').forEach(b => b.classList.remove('btn-blue'));
+            document.querySelectorAll('#host-controls .btn').forEach(b => b.classList.remove('btn-blue'));
             document.getElementById('m-'+m).classList.add('btn-blue');
         },
-        updLobby() {
-            document.getElementById('p-list').innerHTML = Net.players.map(p => `
-                <div class="p-item ${p.name === this.name ? 'me' : ''}">
-                    <div class="dot" style="background:var(--p${p.idx+1})"></div>
-                    <b>${p.name}</b> ${p.name === this.name ? '(ВЫ)' : ''}
+
+        updateLobbyUI() {
+            const list = document.getElementById('player-list');
+            list.innerHTML = Net.players.map(p => `
+                <div class="p-badge ${p.name === this.uName ? 'me' : ''}">
+                    <div class="p-dot" style="background:var(--p${p.idx+1})"></div>
+                    <b>${p.name}</b> ${p.name === this.uName ? '(ВЫ)' : ''}
                 </div>
             `).join('');
         },
-        open(id) {
-            document.querySelectorAll('.scr').forEach(s => s.classList.add('hidden'));
+
+        showScreen(id) {
+            document.querySelectorAll('.app > div').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-        },
-        tap(idx) {
-            if(Net.role === 'HOST') Engine.input(idx, Net.myIdx);
-            else Net.send({type: 'MOVE', idx, p: Net.myIdx});
         }
     };
 </script>
