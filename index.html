@@ -3,68 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS V3.3 TRIPLE STABLE</title>
+    <title>FluxOS V3.4 ULTIMATE STABLE</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg: #0d1117; --acc: #58a6ff;
-            --p1: #ff453a; --p2: #32d74b; --p3: #ffd60a;
-            --card: #161b22; --brd: #30363d;
+            --bg: #050505; --acc: #007aff;
+            --p1: #ff3b30; --p2: #34c759; --p3: #ffcc00;
+            --card: rgba(255,255,255,0.05); --brd: rgba(255,255,255,0.1);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; user-select: none; }
-        body { background: var(--bg); color: #c9d1d9; height: 100vh; overflow: hidden; display: flex; justify-content: center; }
-        .app { width: 100%; max-width: 440px; padding: 20px; display: flex; flex-direction: column; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #fff; height: 100vh; display: flex; justify-content: center; overflow: hidden; }
+        .app { width: 100%; max-width: 440px; padding: 20px; display: flex; flex-direction: column; position: relative; }
 
-        .tap { transition: 0.1s; cursor: pointer; }
-        .tap:active { transform: scale(0.95); filter: brightness(1.2); }
-        .glass { background: var(--card); border: 1px solid var(--brd); border-radius: 28px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); }
+        .tap { transition: transform 0.1s; cursor: pointer; }
+        .tap:active { transform: scale(0.96); opacity: 0.8; }
+        .glass { background: var(--card); border: 1px solid var(--brd); border-radius: 30px; padding: 25px; backdrop-filter: blur(20px); }
 
         input { 
-            width: 100%; padding: 18px; border-radius: 16px; background: #010409; border: 1px solid var(--brd); 
-            color: #fff; font-size: 16px; margin-bottom: 12px; outline: none; transition: 0.3s;
+            width: 100%; padding: 18px; border-radius: 18px; background: rgba(0,0,0,0.3); border: 1px solid var(--brd); 
+            color: #fff; font-size: 16px; margin-bottom: 12px; outline: none; transition: 0.2s;
         }
-        input:focus { border-color: var(--acc); box-shadow: 0 0 10px rgba(88,166,255,0.2); }
+        input:focus { border-color: var(--acc); }
 
-        .btn { padding: 18px; border-radius: 16px; border: none; font-weight: 700; width: 100%; font-size: 15px; }
-        .btn-blue { background: var(--acc); color: #0d1117; }
-        .btn-dark { background: #21262d; color: #fff; border: 1px solid var(--brd); }
-        /* ПОДСВЕТКА ВЫБОРА */
-        .btn-sel { border: 2px solid var(--acc) !important; background: rgba(88,166,255,0.1) !important; box-shadow: 0 0 15px rgba(88,166,255,0.3); }
+        .btn { padding: 18px; border-radius: 18px; border: none; font-weight: 700; width: 100%; font-size: 15px; transition: 0.2s; }
+        .btn-blue { background: var(--acc); color: #fff; box-shadow: 0 10px 25px rgba(0,122,255,0.3); }
+        .btn-dark { background: #1c1c1e; color: #fff; border: 1px solid var(--brd); }
+        .btn-sel { border: 2px solid var(--acc) !important; background: rgba(0,122,255,0.1) !important; color: var(--acc); }
 
-        .big-id { font-size: 44px; font-weight: 900; color: var(--acc); text-align: center; letter-spacing: 6px; margin: 15px 0; text-shadow: 0 0 20px rgba(88,166,255,0.4); }
-        .p-row { display: flex; align-items: center; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 15px; margin-bottom: 8px; border: 1px solid transparent; animation: slide 0.3s ease; }
-        @keyframes slide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        .p-row.me { border-color: var(--acc); background: rgba(88,166,255,0.05); }
+        .big-id { font-size: 48px; font-weight: 900; color: var(--acc); text-align: center; letter-spacing: 4px; margin: 15px 0; font-variant-numeric: tabular-nums; }
+        .p-row { display: flex; align-items: center; gap: 12px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 18px; margin-bottom: 8px; border: 1px solid transparent; }
+        .p-row.me { border-color: var(--acc); background: rgba(0,122,255,0.05); }
         .dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
 
-        .board { display: grid; gap: 8px; background: var(--brd); padding: 8px; border-radius: 22px; width: 100%; }
+        .board { display: grid; gap: 8px; background: var(--brd); padding: 8px; border-radius: 24px; width: 100%; }
         .cell { 
-            aspect-ratio: 1/1; background: #0d1117; border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900;
-            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            aspect-ratio: 1/1; background: #000; border-radius: 14px; 
+            display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900;
         }
         .cell.p1 { color: var(--p1); } .cell.p2 { color: var(--p2); } .cell.p3 { color: var(--p3); }
+        
         .hidden { display: none !important; }
-        .status { text-align: center; color: var(--acc); font-weight: 800; margin: 15px 0; min-height: 20px; font-size: 14px; letter-spacing: 1px; }
+        .status { text-align: center; color: var(--acc); font-weight: 800; margin: 15px 0; min-height: 20px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+        
+        .loading::after { content: '...'; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="app">
     <div id="scr-auth" class="glass" style="margin: auto 0">
-        <h1 style="text-align:center; margin-bottom:25px; letter-spacing:-1px;">FluxOS <span style="color:var(--acc)">V3.3</span></h1>
-        <input type="text" id="nick" placeholder="Твоё имя">
-        <button class="btn btn-blue tap" onclick="App.init(true)">СОЗДАТЬ ХОСТ</button>
+        <h1 style="text-align:center; margin-bottom:25px; font-size: 28px;">FluxOS <span style="color:var(--acc)">V3.4</span></h1>
+        <input type="text" id="nick" placeholder="Имя игрока">
+        <button id="btn-host" class="btn btn-blue tap" onclick="App.init(true)">СОЗДАТЬ ХОСТ</button>
         <div style="display:flex; gap:10px; margin-top:12px;">
-            <input type="number" id="join-id" placeholder="Код" style="margin-bottom:0; flex:1">
-            <button class="btn btn-dark tap" style="flex:1" onclick="App.init(false)">ВСТУПИТЬ</button>
+            <input type="number" id="join-id" placeholder="Код" style="margin-bottom:0; flex:1.2">
+            <button id="btn-join" class="btn btn-dark tap" style="flex:1" onclick="App.init(false)">ВОЙТИ</button>
         </div>
     </div>
 
     <div id="scr-lobby" class="hidden glass">
-        <p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">КОД ДЛЯ ДРУЗЕЙ</p>
-        <div class="big-id" id="id-view">------</div>
+        <p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">ID КОМНАТЫ</p>
+        <div class="big-id" id="id-view">000000</div>
         <div id="p-list" style="margin:20px 0"></div>
+        
         <div id="host-ui" class="hidden">
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:15px;">
                 <button class="btn btn-dark tap" id="m-ttt" onclick="App.setMode('ttt')">6X6</button>
@@ -73,14 +75,17 @@
             </div>
             <button class="btn btn-blue tap" id="go-btn" onclick="Net.startGame()">ЗАПУСТИТЬ</button>
         </div>
-        <div id="guest-ui" class="hidden"><div class="status">ОЖИДАНИЕ ХОСТА...</div></div>
+        
+        <div id="guest-ui" class="hidden">
+            <div class="status loading">ОЖИДАНИЕ ХОСТА</div>
+        </div>
     </div>
 
     <div id="scr-game" class="hidden" style="height:100%; display:flex; flex-direction:column">
         <div style="display:flex; gap:8px; margin-bottom:15px">
-            <div id="slot-0" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:12px;"><b>P1</b>: <span id="s-0">0</span></div>
-            <div id="slot-1" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:12px;"><b>P2</b>: <span id="s-1">0</span></div>
-            <div id="slot-2" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:12px;"><b>P3</b>: <span id="s-2">0</span></div>
+            <div id="slot-0" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:11px"><b>P1</b>: <span id="s-0">0</span></div>
+            <div id="slot-1" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:11px"><b>P2</b>: <span id="s-1">0</span></div>
+            <div id="slot-2" class="p-row" style="flex:1; margin-bottom:0; padding:10px; font-size:11px"><b>P3</b>: <span id="s-2">0</span></div>
         </div>
         <div class="status" id="game-info">ПОДКЛЮЧЕНИЕ</div>
         <div style="flex:1; display:flex; align-items:center; justify-content:center">
@@ -97,20 +102,33 @@
     const Net = {
         peer: null, conns: [], conn: null, isHost: true, players: [], myIdx: 0,
         async open(id) {
+            if(this.peer) this.peer.destroy();
             return new Promise(res => {
-                this.peer = new Peer('FLX-V33-' + id);
-                this.peer.on('open', res);
-                this.peer.on('connection', c => {
-                    this.conns.push(c);
-                    c.on('data', d => this.onData(d, c));
-                    c.on('open', () => this.broadcast({type: 'SYNC', p: this.players}));
-                });
-                this.peer.on('error', e => { if(this.isHost) { alert("Этот ID занят! Пробуй другой."); location.reload(); } });
+                const tryOpen = (curId) => {
+                    this.peer = new Peer('FLX-V34-' + curId);
+                    this.peer.on('open', () => res(curId));
+                    this.peer.on('connection', c => {
+                        this.conns.push(c);
+                        c.on('data', d => this.onData(d, c));
+                        c.on('open', () => this.broadcast({type: 'SYNC', p: this.players}));
+                    });
+                    this.peer.on('error', (err) => {
+                        if(this.isHost && err.type === 'unavailable-id') {
+                            console.log("ID занят, пробуем следующий...");
+                            this.peer.destroy();
+                            tryOpen(parseInt(curId) + 1);
+                        } else if(!this.isHost) {
+                            console.log("Ошибка подключения гостя, игнорируем...");
+                        }
+                    });
+                };
+                tryOpen(id);
             });
         },
         onData(d, c) {
             if(this.isHost) {
                 if(d.type === 'JOIN') {
+                    if(this.players.find(p => p.name === d.name)) return;
                     if(this.players.length >= 3) return;
                     this.players.push({name: d.name, idx: this.players.length});
                     this.broadcast({type: 'SYNC', p: this.players});
@@ -118,12 +136,16 @@
                 }
                 if(d.type === 'TAP') Engine.move(d.i, d.p);
             } else {
-                if(d.type === 'SYNC') { this.players = d.p; this.myIdx = this.players.findIndex(x => x.name === App.nick); App.renderLobby(); }
+                if(d.type === 'SYNC') { 
+                    this.players = d.p; 
+                    this.myIdx = this.players.findIndex(x => x.name === App.nick); 
+                    App.renderLobby(); 
+                }
                 if(d.type === 'START') { App.mode = d.m; Engine.state = d.s; App.show('scr-game'); Engine.draw(); }
                 if(d.type === 'UP') { Engine.state = d.s; Engine.draw(); }
             }
         },
-        broadcast(data) { this.conns.forEach(c => c.send(data)); },
+        broadcast(data) { this.conns.forEach(c => c.readyState === 'open' && c.send(data)); },
         startGame() {
             Engine.init();
             this.broadcast({type: 'START', m: App.mode, s: Engine.state});
@@ -135,27 +157,33 @@
         state: { grid: [], turn: 0, scores: [0,0,0], active: false, msg: '' },
         init() {
             this.state.active = true; this.state.turn = 0; this.state.msg = '';
-            let sz = App.mode === 'c4' ? 42 : (Net.players.length === 3 ? 36 : 9);
+            let sz = (Net.players.length === 3) ? 36 : 9;
+            if(App.mode === 'c4') sz = 42;
             this.state.grid = Array(sz).fill(null);
         },
         move(i, p) {
             if(!this.state.active || this.state.turn !== p || this.state.grid[i] !== null) return;
             this.state.grid[i] = p;
-            if(this.check(p)) { this.state.active = false; this.state.scores[p]++; this.state.msg = Net.players[p].name + " ВЫИГРАЛ!"; }
-            else { this.state.turn = (this.state.turn + 1) % Net.players.length; }
+            if(this.check(p)) { 
+                this.state.active = false; this.state.scores[p]++; 
+                this.state.msg = Net.players[p].name + " ПОБЕДИЛ!"; 
+            } else {
+                this.state.turn = (this.state.turn + 1) % Net.players.length;
+                if(!this.state.grid.includes(null)) { this.state.active = false; this.state.msg = "НИЧЬЯ!"; }
+            }
             Net.broadcast({type: 'UP', s: this.state});
             this.draw();
         },
         check(p) {
-            const g = this.state.grid; const sz = Math.sqrt(g.length);
-            const win = Net.players.length === 3 ? 4 : 3;
+            const g = this.state.grid; const sz = (App.mode === 'c4') ? 7 : Math.sqrt(g.length);
+            const win = (Net.players.length === 3 || App.mode === 'c4') ? 4 : 3;
             for(let i=0; i<g.length; i++) {
                 if(g[i] !== p) continue;
                 for(let [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
                     let c = 1;
                     for(let s=1; s<win; s++) {
                         let r = Math.floor(i/sz)+dr*s, col = (i%sz)+dc*s;
-                        if(r>=0 && r<sz && col>=0 && col<sz && g[r*sz+col] === p) c++; else break;
+                        if(r>=0 && r<(g.length/sz) && col>=0 && col<sz && g[r*sz+col] === p) c++; else break;
                     }
                     if(c === win) return true;
                 }
@@ -163,7 +191,7 @@
         },
         draw() {
             const b = document.getElementById('board');
-            const cols = Math.sqrt(this.state.grid.length);
+            const cols = (App.mode === 'c4') ? 7 : Math.sqrt(this.state.grid.length);
             b.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             b.innerHTML = '';
             this.state.grid.forEach((v, i) => {
@@ -172,12 +200,11 @@
                 if(v !== null) {
                     c.classList.add('p' + (v+1));
                     c.innerText = v === 0 ? 'X' : (v === 1 ? 'O' : '∆');
-                    c.style.transform = "scale(1.1)";
                 }
                 c.onclick = () => { if(Net.isHost) Engine.move(i, Net.myIdx); else Net.conn.send({type: 'TAP', i, p: Net.myIdx}); };
                 b.appendChild(c);
             });
-            document.getElementById('game-info').innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ТВОЙ ХОД!" : "ЖДЁМ...");
+            document.getElementById('game-info').innerText = this.state.msg || (this.state.turn === Net.myIdx ? "ТВОЙ ХОД" : "ЖДЕМ ХОД...");
             Net.players.forEach((p, i) => {
                 document.getElementById('s-'+i).innerText = this.state.scores[i];
                 document.getElementById('slot-'+i).classList.toggle('me', this.state.turn === i && this.state.active);
@@ -189,33 +216,38 @@
     const App = {
         nick: '', mode: 'ttt',
         async init(host) {
-            this.nick = document.getElementById('nick').value || 'Игрок' + Math.floor(Math.random()*99);
+            const btn = document.getElementById(host ? 'btn-host' : 'btn-join');
+            btn.classList.add('loading'); btn.disabled = true;
+
+            this.nick = document.getElementById('nick').value || 'User' + Math.floor(Math.random()*99);
             Net.isHost = host;
-            const code = host ? Math.floor(100000 + Math.random()*900000).toString() : document.getElementById('join-id').value;
-            if(!code) return alert("Введи код!");
+            let code = host ? Math.floor(100000 + Math.random()*900000).toString() : document.getElementById('join-id').value;
             
-            await Net.open(code);
-            document.getElementById('id-view').innerText = code;
+            if(!host && !code) { alert("Введи код!"); btn.classList.remove('loading'); btn.disabled = false; return; }
+
+            const finalId = await Net.open(code);
+            document.getElementById('id-view').innerText = finalId;
             
             if(host) {
                 Net.players = [{name: this.nick, idx: 0}];
                 document.getElementById('host-ui').classList.remove('hidden');
             } else {
-                this.tryJoin(code);
+                this.tryJoin(finalId);
             }
             this.renderLobby(); this.show('scr-lobby'); this.setMode('ttt');
+            btn.classList.remove('loading'); btn.disabled = false;
         },
         tryJoin(code) {
             const connect = () => {
-                Net.conn = Net.peer.connect('FLX-V33-' + code);
+                if(Net.players.length > 0) return;
+                Net.conn = Net.peer.connect('FLX-V34-' + code, { reliable: true });
                 Net.conn.on('open', () => { 
                     Net.conn.send({type: 'JOIN', name: this.nick}); 
                     document.getElementById('guest-ui').classList.remove('hidden');
                 });
             };
             connect();
-            // Авто-повтор если не зашло
-            const timer = setInterval(() => { if(Net.players.length > 0) clearInterval(timer); else connect(); }, 2000);
+            const t = setInterval(() => { if(Net.players.length > 0) clearInterval(t); else connect(); }, 2500);
         },
         setMode(m) {
             this.mode = m;
@@ -234,7 +266,7 @@
                 if(Net.players[i]) { el.classList.remove('hidden'); el.querySelector('b').innerText = Net.players[i].name; }
                 else el.classList.add('hidden');
             }
-            if(Net.isHost) document.getElementById('go-btn').innerText = Net.players.length > 1 ? `ИГРАТЬ (${Net.players.length})` : "ЖДЕМ ИГРОКОВ...";
+            if(Net.isHost) document.getElementById('go-btn').innerText = Net.players.length > 1 ? `ИГРАТЬ (${Net.players.length} чел.)` : "ЖДЕМ ИГРОКОВ...";
         },
         show(id) { document.querySelectorAll('.app > div').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
     };
