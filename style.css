@@ -1,299 +1,315 @@
-:root{
+/* WEBCRAFT ULTRA VISUAL STYLESHEET 
+    Focus: Glassmorphism & Survival HUD 
+*/
 
---glass:rgba(255,255,255,0.1);
---blur:blur(20px);
---icon-size:64px;
-
+:root {
+    --mc-font: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --heart-red: #ff3b3b;
+    --hunger-brown: #a67c52;
+    --glass-bg: rgba(20, 20, 20, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --accent: #4CAF50;
+    --shadow-heavy: 0 10px 30px rgba(0,0,0,0.8);
 }
 
-body{
-
-background:#111;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-height:100vh;
-
-font-family:system-ui;
-
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
 }
 
-/* PHONE FRAME */
-
-#phone-shell{
-
-width:360px;
-aspect-ratio:19.5/9;
-
-background:#000;
-
-border-radius:3rem;
-
-border:8px solid #111;
-
-position:relative;
-
-overflow:hidden;
-
-box-shadow:0 30px 80px rgba(0,0,0,0.7);
-
+body, html {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background-color: #050505;
+    color: #eee;
+    font-family: var(--mc-font);
 }
 
-#dynamic-island{
-
-position:absolute;
-
-top:10px;
-left:50%;
-
-transform:translateX(-50%);
-
-width:120px;
-height:30px;
-
-background:#000;
-
-border-radius:2rem;
-
-z-index:20;
-
+/* Слой VFX и постобработки */
+#vfx-layer {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 500;
 }
 
-/* OS */
-
-#os-layer{
-
-position:absolute;
-
-inset:0;
-
-overflow:hidden;
-
+.vignette {
+    width: 100%; height: 100%;
+    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.6) 100%);
 }
 
-/* WALLPAPER */
-
-#wallpaper{
-
-position:absolute;
-inset:-40px;
-
-background-image:url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee");
-
-background-size:cover;
-background-position:center;
-
-transition:transform 0.2s;
-
+#damage-overlay {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(255,0,0,0) 30%, rgba(255,0,0,0.3) 100%);
+    opacity: 0; transition: opacity 0.2s;
 }
 
-/* APPS GRID */
-
-#apps-grid{
-
-position:absolute;
-
-top:80px;
-
-left:0;
-right:0;
-
-display:grid;
-
-grid-template-columns:repeat(4,1fr);
-
-gap:20px;
-
-padding:20px;
-
-z-index:2;
-
+/* ГЛАВНОЕ МЕНЮ: Контейнер */
+#main-menu {
+    position: fixed; width: 100%; height: 100%;
+    z-index: 1000;
+    display: flex; justify-content: center; align-items: center;
+    background: #111; /* Временный фон до загрузки WebGL */
 }
 
-.app-icon{
-
-display:flex;
-flex-direction:column;
-align-items:center;
-
-color:white;
-
-font-size:12px;
-
-cursor:pointer;
-
+.menu-background {
+    position: absolute; width: 100%; height: 100%;
+    filter: blur(4px) brightness(0.6);
 }
 
-.icon-box{
-
-width:var(--icon-size);
-height:var(--icon-size);
-
-border-radius:18px;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
+.menu-ui {
+    position: relative; z-index: 10;
+    width: 90%; max-width: 800px;
+    padding: 40px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(25px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: var(--shadow-heavy);
+    display: flex; flex-direction: column;
+    gap: 30px;
+/* Продолжение .menu-ui */
+.glitch-text {
+    position: relative;
+    font-size: 4rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #fff;
+    letter-spacing: 5px;
+    margin: 0;
+    text-shadow: 0.05em 0 0 rgba(255,0,81,0.75),
+                -0.025em -0.05em 0 rgba(0,255,187,0.75),
+                0.025em 0.05em 0 rgba(255,255,0,0.75);
+    animation: glitch 500ms infinite;
 }
 
-/* APP FULLSCREEN */
-
-#app-container{
-
-position:absolute;
-
-inset:0;
-
-z-index:5;
-
-pointer-events:none;
-
+@keyframes glitch {
+    0% { text-shadow: 0.05em 0 0 rgba(255,0,81,0.75), -0.05em -0.025em 0 rgba(0,255,187,0.75); }
+    14% { text-shadow: 0.05em 0 0 rgba(255,0,81,0.75), -0.05em -0.025em 0 rgba(0,255,187,0.75); }
+    15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,81,0.75), 0.025em 0.025em 0 rgba(0,255,187,0.75); }
+    49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,81,0.75), 0.025em 0.025em 0 rgba(0,255,187,0.75); }
+    50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,81,0.75), 0.05em 0 0 rgba(0,255,187,0.75); }
+    99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,81,0.75), 0.05em 0 0 rgba(0,255,187,0.75); }
+    100% { text-shadow: -0.025em 0 0 rgba(255,0,81,0.75), -0.025em -0.025em 0 rgba(0,255,187,0.75); }
 }
 
-.app-window{
-
-position:absolute;
-
-inset:0;
-
-display:flex;
-flex-direction:column;
-
-padding:30px;
-
-color:white;
-
+.user-profile {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: rgba(255,255,255,0.05);
+    padding: 20px;
+    border-radius: 15px;
 }
 
-/* DOCK */
-
-#dock{
-
-position:absolute;
-
-bottom:30px;
-left:50%;
-
-transform:translateX(-50%);
-
-width:80%;
-height:80px;
-
-border-radius:28px;
-
-background:rgba(255,255,255,0.08);
-
-backdrop-filter:blur(20px) saturate(180%);
-
-display:flex;
-align-items:center;
-justify-content:center;
-
+#nickname {
+    background: #000;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 12px;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    width: 60%;
 }
 
-#dock-icons{
-
-display:flex;
-
-gap:18px;
-
-z-index:3;
-
+.btn-main {
+    background: linear-gradient(145deg, #4caf50, #388e3c);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #1b5e20;
+    transition: all 0.1s;
+    width: 100%;
 }
 
-.dock-icon{
-
-width:56px;
-height:56px;
-
-border-radius:16px;
-
-background:rgba(255,255,255,0.15);
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-color:white;
-
-cursor:pointer;
-
+.btn-main:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #1b5e20;
 }
 
-/* LIQUID CANVAS */
-
-#liquid-canvas{
-
-position:absolute;
-
-inset:0;
-
-width:100%;
-height:100%;
-
-pointer-events:none;
-
+/* СИСТЕМА ВЫЖИВАНИЯ (HUD) */
+.survival-status {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
 }
 
-/* HOME BAR */
-
-#home-bar{
-
-position:absolute;
-
-bottom:6px;
-
-left:50%;
-
-transform:translateX(-50%);
-
-width:140px;
-height:5px;
-
-border-radius:3px;
-
-background:white;
-
-opacity:0.8;
-
+.status-row {
+    display: flex;
+    gap: 2px;
 }
 
-/* MUSIC APP */
-
-.music-ui{
-
-display:flex;
-flex-direction:column;
-
-align-items:center;
-gap:20px;
-
+/* СЕРДЦА (Проработка текстур) */
+.heart {
+    width: 18px;
+    height: 18px;
+    background-image: url('https://i.imgur.com/M6X8U2v.png'); /* Спрайт сердец */
+    background-size: 54px 18px; /* 3 состояния: full, half, empty */
+    image-rendering: pixelated;
 }
 
-.album{
+.heart.full { background-position: 0 0; }
+.heart.half { background-position: -18px 0; }
+.heart.empty { background-position: -36px 0; }
 
-width:200px;
-height:200px;
-
-border-radius:20px;
-
-background:#fff3;
-
+/* ГОЛОД (Проработка текстур) */
+.food {
+    width: 18px;
+    height: 18px;
+    background-image: url('https://i.imgur.com/83pZshm.png'); /* Спрайт еды */
+    background-size: 54px 18px;
+    image-rendering: pixelated;
 }
 
-.play-btn{
+.food.full { background-position: 0 0; }
+.food.half { background-position: -18px 0; }
+.food.empty { background-position: -36px 0; }
 
-padding:12px 30px;
-
-border-radius:20px;
-
-background:white;
-
-color:black;
-
-cursor:pointer;
-
+/* ХОТБАР */
+.bottom-ui {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
 }
+
+#hotbar-wrapper {
+    position: relative;
+    background: rgba(0,0,0,0.5);
+    border: 4px solid #333;
+    padding: 2px;
+    display: flex;
+}
+
+.hotbar-slots {
+    display: flex;
+    gap: 2px;
+}
+
+.slot {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.hotbar-selector {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border: 4px solid #fff;
+    left: -2px;
+    top: -2px;
+    transition: transform 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    pointer-events: none;
+    box-shadow: 0 0 15px rgba(255,255,255,0.3);
+}
+/* Продолжение style.css */
+
+/* МОБИЛЬНЫЕ КОНТРОЛЛЕРЫ (Ultra Precision) */
+#touch-controls {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+#joystick-container {
+    position: absolute;
+    bottom: 50px; left: 50px;
+    width: 150px; height: 150px;
+    pointer-events: auto;
+}
+
+#joystick-outer {
+    width: 120px; height: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center;
+}
+
+#joystick-inner {
+    width: 50px; height: 50px;
+    background: radial-gradient(circle, #fff, #ccc);
+    border-radius: 50%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    transition: transform 0.05s linear;
+}
+
+.action-buttons {
+    position: absolute;
+    bottom: 50px; right: 50px;
+    display: flex; flex-direction: column;
+    gap: 20px; pointer-events: auto;
+}
+
+.dual-actions {
+    display: flex; gap: 15px;
+}
+
+.t-btn {
+    width: 75px; height: 75px;
+    background: var(--glass-bg);
+    border: 2px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    color: white; font-weight: 900; font-size: 0.8rem;
+    box-shadow: var(--shadow-heavy);
+}
+
+.t-btn.red { border-color: var(--danger-color); color: var(--danger-color); }
+.t-btn.green { border-color: var(--accent); color: var(--accent); }
+
+.t-btn:active {
+    transform: scale(0.9);
+    background: rgba(255,255,255,0.2);
+}
+
+/* ЭФФЕКТ СМЕРТИ */
+.death-screen {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(139, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    z-index: 2000;
+    animation: fadeIn 1s forwards;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* РЕТИКЛ (Прицел) */
+#reticle {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.reticle-svg {
+    width: 40px; height: 40px;
+    opacity: 0.5;
+}
+
+/* Окончание файла style.css */
