@@ -3,315 +3,840 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxOS Gaming Hub v2</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <title>WebCraft P2P Multiplayer - Smooth Physics Update</title>
     <style>
-        :root {
-            --bg: #050508;
-            --card: #12121a;
-            --accent: #007aff;
-            --p1: #ff3b30;
-            --p2: #ffcc00;
-            --text: #ffffff;
-            --glass: rgba(255, 255, 255, 0.05);
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: #000;
+            touch-action: none; font-family: 'Courier New', Courier, monospace;
+            user-select: none; -webkit-user-select: none;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        #game-canvas { display: block; width: 100%; height: 100%; }
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-            background: radial-gradient(circle at top, #1a1a2e 0%, #050508 100%);
+        /* ГЛАВНОЕ МЕНЮ */
+        #main-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://i.imgur.com/7gN6g6f.jpg') center/cover;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        .menu-box {
+            background: rgba(0, 0, 0, 0.8); padding: 20px; border: 4px solid #555;
+            border-radius: 10px; text-align: center; width: 300px; color: white;
+        }
+        .menu-box h1 { margin-top: 0; color: #4CAF50; text-shadow: 2px 2px 0 #000; }
+        .menu-box input {
+            width: 90%; padding: 10px; margin: 10px 0; font-size: 16px;
+            text-align: center; border: 2px solid #777; background: #222; color: #fff;
+        }
+        .menu-btn {
+            width: 100%; padding: 15px; margin: 5px 0; font-size: 18px; font-weight: bold;
+            background: #555; color: white; border: 2px solid #888; cursor: pointer;
+        }
+        .menu-btn:active { background: #777; }
+        .menu-btn.host { background: #2E7D32; border-color: #4CAF50; }
+        .menu-btn.join { background: #1565C0; border-color: #42A5F5; }
+
+        /* ИГРОВОЙ ИНТЕРФЕЙС */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: none; z-index: 10;
         }
 
-        .container {
-            width: 95%;
-            max-width: 400px;
-            background: var(--card);
-            padding: 20px;
-            border-radius: 28px;
-            border: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        #touch-zone-left {
+            position: absolute; top: 0; left: 0; width: 50%; height: 100%;
+            pointer-events: auto;
         }
-
-        h1 { font-size: 22px; font-weight: 800; margin-bottom: 20px; letter-spacing: 1px; color: var(--accent); text-transform: uppercase; }
+        #touch-zone-right {
+            position: absolute; top: 0; right: 0; width: 50%; height: 100%;
+            pointer-events: auto;
+        }
 
         .btn {
-            width: 100%;
-            padding: 16px;
-            border-radius: 16px;
-            border: none;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: 0.2s;
+            pointer-events: auto; background: rgba(0, 0, 0, 0.5); border: 2px solid #fff;
+            color: white; border-radius: 50%; display: flex; justify-content: center;
+            align-items: center; font-weight: bold; font-size: 12px;
+        }
+        .btn:active { background: rgba(255, 255, 255, 0.5); }
+
+        #info-panel {
+            position: absolute; top: 10px; left: 10px; color: white;
+            text-shadow: 1px 1px 0 #000; font-size: 14px; pointer-events: none;
         }
 
-        .btn-main { background: var(--accent); color: white; }
-        .btn-sec { background: var(--glass); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
-        .btn:active { transform: scale(0.96); opacity: 0.8; }
-
-        input {
-            width: 100%;
-            padding: 15px;
-            border-radius: 16px;
-            border: 1px solid #333;
-            background: #000;
-            color: var(--accent);
-            font-size: 20px;
-            text-align: center;
-            margin-bottom: 15px;
-            font-weight: bold;
+        #fullscreen-btn {
+            position: absolute; top: 10px; right: 10px; padding: 10px;
+            background: rgba(0,0,0,0.5); color: white; border: 1px solid white;
+            pointer-events: auto; cursor: pointer; border-radius: 5px;
         }
 
-        #game-status { font-size: 18px; font-weight: 600; margin-bottom: 15px; height: 24px; }
-
-        /* Сетка для 4 в ряд (7x6) */
-        .board-7-6 {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            background: #1c1c26;
-            padding: 10px;
-            border-radius: 18px;
+        #joystick-base {
+            position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; pointer-events: none;
+        }
+        #joystick-knob {
+            position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+            margin-top: -25px; margin-left: -25px; background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%; transition: transform 0.05s;
         }
 
-        /* Сетка для Крестиков-ноликов (3x3) */
-        .board-3-3 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            background: #1c1c26;
-            padding: 15px;
-            border-radius: 18px;
+        #action-buttons { position: absolute; bottom: 20px; right: 20px; width: 160px; height: 160px; pointer-events: none;}
+        #btn-jump { position: absolute; top: 0; left: 50px; width: 60px; height: 60px; }
+        #btn-break { position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; }
+        #btn-place { position: absolute; bottom: 0; right: 0; width: 60px; height: 60px; }
+
+        #hotbar {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 4px; pointer-events: auto; background: rgba(0, 0, 0, 0.6);
+            padding: 4px; border: 2px solid #555;
         }
+        .slot { width: 36px; height: 36px; border: 2px solid #888; box-sizing: border-box; }
+        .slot.active { border-color: #fff; box-shadow: 0 0 8px white; transform: scale(1.1); }
 
-        .cell {
-            background: #2a2a35;
-            aspect-ratio: 1/1;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            font-weight: 900;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            animation: spawn 0.4s ease;
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 16px; height: 16px;
+            transform: translate(-50%, -50%); pointer-events: none;
         }
+        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255,255,255,0.8); }
+        #crosshair::before { top: 7px; left: 0; width: 16px; height: 2px; }
+        #crosshair::after { top: 0; left: 7px; width: 2px; height: 16px; }
 
-        @keyframes spawn {
-            from { transform: scale(0); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        .player-label {
+            color: white; font-family: sans-serif; font-weight: bold; font-size: 14px;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px;
         }
-
-        .cell-square { border-radius: 12px; font-size: 48px; }
-
-        /* Цвета игроков */
-        .p1 { background: var(--p1); color: white; box-shadow: 0 0 15px var(--p1); }
-        .p2 { background: var(--p2); color: black; box-shadow: 0 0 15px var(--p2); }
-
-        .hidden { display: none !important; }
-        .id-text { color: var(--accent); font-size: 32px; font-weight: 800; margin: 10px 0; letter-spacing: 3px; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <div id="setup-screen" class="container">
-        <h1>Flux Gaming Hub</h1>
-        <div id="init-btns">
-            <button class="btn btn-main" onclick="initLobby(true)">Создать комнату</button>
-            <input type="number" id="join-code" placeholder="000000">
-            <button class="btn btn-sec" onclick="initLobby(false)">Войти к другу</button>
-        </div>
-        <div id="waiting" class="hidden">
-            <p>Ваш секретный код:</p>
-            <div class="id-text" id="display-code">------</div>
-            <p style="color: #555; font-size: 14px;">Скажи его второму игроку</p>
+    <div id="main-menu">
+        <div class="menu-box">
+            <h1>WebCraft P2P</h1>
+            <input type="text" id="nickname-input" placeholder="Ваш Никнейм" maxlength="12">
+            
+            <div style="border-top: 1px solid #555; margin: 15px 0; padding-top: 15px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px;">Создать свой сервер:</p>
+                <input type="text" id="host-id-input" placeholder="ID (5 цифр)" maxlength="5">
+                <button class="menu-btn host" onclick="startGame('host')">Создать Хост</button>
+            </div>
+
+            <div style="border-top: 1px solid #555; margin: 15px 0; padding-top: 15px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px;">Присоединиться по ID:</p>
+                <input type="text" id="join-id-input" placeholder="Введите ID хоста" maxlength="5">
+                <button class="menu-btn join" onclick="startGame('client')">Войти</button>
+            </div>
+            <p id="menu-status" style="color: #ff5252; font-size: 12px; height: 15px;"></p>
         </div>
     </div>
 
-    <div id="mode-screen" class="container hidden">
-        <h1>Выбери режим</h1>
-        <button class="btn btn-main" onclick="sendStart('7-6')">4 В РЯД (7x6)</button>
-        <button class="btn btn-sec" onclick="sendStart('3-3')">КРЕСТИКИ-НОЛИКИ (3x3)</button>
-    </div>
+    <div id="game-container"></div>
 
-    <div id="game-screen" class="container hidden">
-        <div id="game-status">Ожидание...</div>
-        <div id="board-grid"></div>
-        <div id="reset-area" class="hidden">
-            <button class="btn btn-main" style="margin-top:20px" onclick="requestRestart()">Реванш</button>
-            <button class="btn btn-sec" onclick="location.reload()">В меню</button>
+    <div id="ui-layer">
+        <div id="touch-zone-left"></div>
+        <div id="touch-zone-right"></div>
+        
+        <div id="info-panel">
+            Игрок: <span id="ui-nick"></span><br>
+            Хост ID: <span id="ui-room" style="color:#4CAF50; font-weight:bold;"></span><br>
+            FPS: <span id="ui-fps">0</span>
+        </div>
+
+        <div id="fullscreen-btn">В весь экран</div>
+        <div id="crosshair"></div>
+        
+        <div id="hotbar"></div>
+
+        <div id="joystick-base"><div id="joystick-knob"></div></div>
+
+        <div id="action-buttons">
+            <div id="btn-jump" class="btn">Прыжок</div>
+            <div id="btn-break" class="btn">Лом</div>
+            <div id="btn-place" class="btn">Блок</div>
         </div>
     </div>
 
     <script>
-        let peer, conn;
-        let isHost = false, myTurn = false, currentGame = '7-6';
-        let board = [], gameOver = false;
+        // ==========================================
+        // 1. ИНИЦИАЛИЗАЦИЯ ДВИЖКА
+        // ==========================================
+        const container = document.getElementById('game-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 15, 40);
 
-        function initLobby(host) {
-            isHost = host;
-            const code = isHost ? Math.floor(100000 + Math.random() * 900000).toString() : document.getElementById('join-code').value;
-            if (!isHost && code.length < 5) return alert("Введите код!");
+        const camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 100);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
 
-            peer = isHost ? new Peer('flux-' + code) : new Peer();
+        const labelRenderer = new THREE.CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        container.appendChild(labelRenderer.domElement);
 
-            peer.on('open', () => {
-                if(isHost) {
-                    document.getElementById('init-btns').classList.add('hidden');
-                    document.getElementById('waiting').classList.remove('hidden');
-                    document.getElementById('display-code').innerText = code;
-                } else {
-                    connectToPlayer('flux-' + code);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(20, 50, 20);
+        scene.add(dirLight);
+
+        // ==========================================
+        // 2. ТЕКСТУРЫ И МАТЕРИАЛЫ
+        // ==========================================
+        function createPixelTexture(hex, noise) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = hex; ctx.fillRect(0, 0, 16, 16);
+            for(let i=0; i<16; i++) {
+                for(let j=0; j<16; j++) {
+                    if(Math.random() > 0.5) {
+                        ctx.fillStyle = `rgba(0,0,0,${Math.random() * noise})`;
+                        ctx.fillRect(i, j, 1, 1);
+                    }
                 }
-            });
-
-            peer.on('connection', (c) => {
-                conn = c;
-                bindEvents();
-            });
-
-            peer.on('error', (e) => { alert("Ошибка сети. Попробуйте другой код."); location.reload(); });
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter;
+            return tex;
         }
 
-        function connectToPlayer(id) {
-            conn = peer.connect(id);
-            bindEvents();
+        const materials = {
+            grass: new THREE.MeshLambertMaterial({ map: createPixelTexture('#4CAF50', 0.3) }),
+            dirt: new THREE.MeshLambertMaterial({ map: createPixelTexture('#795548', 0.4) }),
+            stone: new THREE.MeshLambertMaterial({ map: createPixelTexture('#9E9E9E', 0.2) }),
+            wood: new THREE.MeshLambertMaterial({ map: createPixelTexture('#5D4037', 0.5) }),
+            leaves: new THREE.MeshLambertMaterial({ map: createPixelTexture('#2E7D32', 0.3), transparent: true, opacity: 0.9 })
+        };
+        const blockGeo = new THREE.BoxGeometry(1, 1, 1);
+
+        // ==========================================
+        // 3. СИСТЕМА ЧАНКОВ
+        // ==========================================
+        const CHUNK_SIZE = 8;
+        const RENDER_DISTANCE = 2;
+        let chunks = {}; 
+        let worldBlocks = []; 
+
+        function getChunkKey(x, z) {
+            return `${Math.floor(x / CHUNK_SIZE)},${Math.floor(z / CHUNK_SIZE)}`;
         }
 
-        function bindEvents() {
-            conn.on('open', () => {
-                document.getElementById('setup-screen').classList.add('hidden');
-                if(isHost) document.getElementById('mode-screen').classList.remove('hidden');
-            });
+        function addBlock(type, x, y, z, isNetwork = false) {
+            const mesh = new THREE.Mesh(blockGeo, materials[type]);
+            mesh.position.set(x, y, z);
+            mesh.userData = { type: type };
+            scene.add(mesh);
+            worldBlocks.push(mesh);
 
-            conn.on('data', (data) => {
-                if(data.type === 'start') {
-                    currentGame = data.mode;
-                    beginGame(false);
-                } else if(data.type === 'move') {
-                    executeMove(data.r, data.c, isHost ? 2 : 1);
-                } else if(data.type === 'restart') {
-                    beginGame(isHost);
+            const chunkKey = getChunkKey(x, z);
+            if(!chunks[chunkKey]) chunks[chunkKey] = { meshes: [], isLoaded: true };
+            chunks[chunkKey].meshes.push(mesh);
+
+            if(isNetwork && isHost) broadcastData({ type: 'place', bType: type, x, y, z });
+            if(isNetwork && !isHost) sendDataToHost({ type: 'place', bType: type, x, y, z });
+            return mesh;
+        }
+
+        function removeBlock(mesh, isNetwork = false) {
+            scene.remove(mesh);
+            const index = worldBlocks.indexOf(mesh);
+            if(index > -1) worldBlocks.splice(index, 1);
+            
+            const chunkKey = getChunkKey(mesh.position.x, mesh.position.z);
+            if(chunks[chunkKey]) {
+                const cIndex = chunks[chunkKey].meshes.indexOf(mesh);
+                if(cIndex > -1) chunks[chunkKey].meshes.splice(cIndex, 1);
+            }
+
+            // Спавн частиц при разрушении
+            spawnParticles(mesh.position.x, mesh.position.y, mesh.position.z, mesh.material);
+
+            if(isNetwork && isHost) broadcastData({ type: 'break', x: mesh.position.x, y: mesh.position.y, z: mesh.position.z });
+            if(isNetwork && !isHost) sendDataToHost({ type: 'break', x: mesh.position.x, y: mesh.position.y, z: mesh.position.z });
+        }
+
+        function generateChunk(cx, cz) {
+            const chunkKey = `${cx},${cz}`;
+            if (chunks[chunkKey]) return; 
+            chunks[chunkKey] = { meshes: [], isLoaded: true };
+
+            const startX = cx * CHUNK_SIZE;
+            const startZ = cz * CHUNK_SIZE;
+
+            for (let x = 0; x < CHUNK_SIZE; x++) {
+                for (let z = 0; z < CHUNK_SIZE; z++) {
+                    const wx = startX + x;
+                    const wz = startZ + z;
+                    
+                    addBlock('grass', wx, 0, wz);
+                    addBlock('dirt', wx, -1, wz);
+
+                    if (Math.random() < 0.015 && wx % 2 !== 0 && wz % 2 !== 0) {
+                        for (let y = 1; y <= 4; y++) addBlock('wood', wx, y, wz);
+                        for (let lx = -1; lx <= 1; lx++) {
+                            for (let lz = -1; lz <= 1; lz++) {
+                                addBlock('leaves', wx + lx, 4, wz + lz);
+                                if(lx===0 || lz===0) addBlock('leaves', wx + lx, 5, wz + lz);
+                            }
+                        }
+                    }
                 }
-            });
+            }
         }
 
-        function sendStart(mode) {
-            currentGame = mode;
-            conn.send({type: 'start', mode: mode});
-            beginGame(true);
+        function updateChunks() {
+            const px = Math.floor(player.position.x / CHUNK_SIZE);
+            const pz = Math.floor(player.position.z / CHUNK_SIZE);
+
+            for (let x = -RENDER_DISTANCE; x <= RENDER_DISTANCE; x++) {
+                for (let z = -RENDER_DISTANCE; z <= RENDER_DISTANCE; z++) {
+                    generateChunk(px + x, pz + z);
+                }
+            }
+
+            for (let key in chunks) {
+                const [cx, cz] = key.split(',').map(Number);
+                const dist = Math.max(Math.abs(cx - px), Math.abs(cz - pz));
+                if (dist > RENDER_DISTANCE + 1 && chunks[key].isLoaded) {
+                    chunks[key].meshes.forEach(m => scene.remove(m));
+                    worldBlocks = worldBlocks.filter(b => !chunks[key].meshes.includes(b));
+                    chunks[key].isLoaded = false;
+                } else if (dist <= RENDER_DISTANCE + 1 && !chunks[key].isLoaded) {
+                    chunks[key].meshes.forEach(m => { scene.add(m); worldBlocks.push(m); });
+                    chunks[key].isLoaded = true;
+                }
+            }
         }
 
-        function beginGame(first) {
-            document.getElementById('mode-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('reset-area').classList.add('hidden');
-            
-            const rows = currentGame === '7-6' ? 6 : 3;
-            const cols = currentGame === '7-6' ? 7 : 3;
-            board = Array(rows).fill().map(() => Array(cols).fill(0));
-            
-            gameOver = false;
-            myTurn = first;
-            renderGrid();
-            refreshStatus();
-        }
+        // ==========================================
+        // 4. СИСТЕМА ЧАСТИЦ (НОВОЕ)
+        // ==========================================
+        const particles = [];
+        const particleGeo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
 
-        function renderGrid() {
-            const grid = document.getElementById('board-grid');
-            grid.className = currentGame === '7-6' ? 'board-7-6' : 'board-3-3';
-            grid.innerHTML = '';
-
-            board.forEach((row, r) => {
-                row.forEach((cellVal, c) => {
-                    const el = document.createElement('div');
-                    el.className = 'cell';
-                    if(currentGame === '3-3') el.classList.add('cell-square');
-                    
-                    if(cellVal === 1) { el.classList.add('p1'); el.innerText = currentGame === '3-3' ? '✕' : ''; }
-                    if(cellVal === 2) { el.classList.add('p2'); el.innerText = currentGame === '3-3' ? '◯' : ''; }
-                    
-                    el.onclick = () => userClick(r, c);
-                    grid.appendChild(el);
+        function spawnParticles(x, y, z, material) {
+            for (let i = 0; i < 12; i++) {
+                const pMesh = new THREE.Mesh(particleGeo, material);
+                pMesh.position.set(x + (Math.random()-0.5)*0.8, y + (Math.random()-0.5)*0.8, z + (Math.random()-0.5)*0.8);
+                scene.add(pMesh);
+                particles.push({
+                    mesh: pMesh,
+                    vel: new THREE.Vector3((Math.random()-0.5)*4, Math.random()*3 + 2, (Math.random()-0.5)*4),
+                    life: 1.0
                 });
+            }
+        }
+
+        function updateParticles(delta) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.vel.y -= 15.0 * delta; // Гравитация частиц
+                p.mesh.position.addScaledVector(p.vel, delta);
+                p.life -= delta * 1.2;
+                p.mesh.scale.setScalar(p.life);
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. ИГРОК И РУКА (ПЛАВНЫЕ АНИМАЦИИ)
+        // ==========================================
+        const player = {
+            position: new THREE.Vector3(0, 5, 0),
+            velocity: new THREE.Vector3(0, 0, 0),
+            height: 1.6, radius: 0.3,
+            speed: 5.0, jumpForce: 7.0, gravity: 22.0,
+            onGround: false,
+            nickname: "Player",
+            pitch: 0, yaw: 0
+        };
+
+        const viewObj = new THREE.Object3D(); 
+        scene.add(viewObj);
+        viewObj.add(camera);
+
+        const handGroup = new THREE.Group();
+        camera.add(handGroup); 
+        
+        const handBlock = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), materials['dirt']);
+        handGroup.position.set(0.6, -0.4, -0.8);
+        handBlock.rotation.set(0, Math.PI/4, 0);
+        handGroup.add(handBlock);
+
+        // Переменная для плавной анимации удара
+        let punchAnimTime = 0;
+        let isPunching = false;
+
+        function startPunchAnimation() {
+            if(!isPunching) {
+                isPunching = true;
+                punchAnimTime = 0;
+            }
+        }
+
+        function updateHandAnimation(delta) {
+            if (isPunching) {
+                punchAnimTime += delta * 10; // Скорость удара
+                if (punchAnimTime >= Math.PI) {
+                    isPunching = false;
+                    punchAnimTime = 0;
+                }
+                // Используем синусоиду для движения вперед-вниз и возврата
+                handBlock.rotation.x = -Math.sin(punchAnimTime) * 0.8;
+                handGroup.position.y = -0.4 - Math.sin(punchAnimTime) * 0.2;
+                handGroup.position.z = -0.8 - Math.sin(punchAnimTime) * 0.3;
+            } else {
+                handBlock.rotation.x = 0;
+                // Боббинг (покачивание) обрабатывается в animate()
+            }
+        }
+
+        const hotbarTypes = ['dirt', 'stone', 'wood', 'leaves', 'grass'];
+        let activeSlot = 0;
+        const hotbarEl = document.getElementById('hotbar');
+        hotbarTypes.forEach((type, i) => {
+            const slot = document.createElement('div');
+            slot.className = 'slot' + (i===0 ? ' active' : '');
+            slot.style.backgroundColor = materials[type].color.getStyle();
+            slot.addEventListener('touchstart', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                document.querySelectorAll('.slot')[activeSlot].classList.remove('active');
+                activeSlot = i;
+                slot.classList.add('active');
+                handBlock.material = materials[hotbarTypes[activeSlot]];
+            });
+            hotbarEl.appendChild(slot);
+        });
+
+        // ==========================================
+        // 6. ПРАВИЛЬНАЯ ФИЗИКА (ПЕРЕПИСАНА ПОЛНОСТЬЮ)
+        // ==========================================
+        function getPlayerAABB(pos, shrinkY = 0) {
+            return new THREE.Box3(
+                new THREE.Vector3(pos.x - player.radius, pos.y - player.height + shrinkY, pos.z - player.radius),
+                new THREE.Vector3(pos.x + player.radius, pos.y, pos.z + player.radius)
+            );
+        }
+
+        function getBlockAABB(b) {
+            return new THREE.Box3(
+                new THREE.Vector3(b.position.x - 0.5, b.position.y - 0.5, b.position.z - 0.5),
+                new THREE.Vector3(b.position.x + 0.5, b.position.y + 0.5, b.position.z + 0.5)
+            );
+        }
+
+        function getIntersectingBlocks(box) {
+            let hits = [];
+            for(let i=0; i<worldBlocks.length; i++) {
+                const b = worldBlocks[i];
+                if (Math.abs(b.position.x - player.position.x) > 2 || Math.abs(b.position.z - player.position.z) > 2) continue;
+                const blockBox = getBlockAABB(b);
+                if (box.intersectsBox(blockBox)) hits.push({ mesh: b, box: blockBox });
+            }
+            return hits;
+        }
+
+        function movePlayerWithCollisions(moveX, moveY, moveZ) {
+            // --- ОСЬ Y (Гравитация и прыжки) ---
+            player.position.y += moveY;
+            player.onGround = false;
+            let hitsY = getIntersectingBlocks(getPlayerAABB(player.position, 0));
+            
+            if (hitsY.length > 0) {
+                if (moveY < 0) { // Падение
+                    let highestTop = -Infinity;
+                    hitsY.forEach(h => { if(h.box.max.y > highestTop) highestTop = h.box.max.y; });
+                    player.position.y = highestTop + player.height;
+                    player.velocity.y = 0;
+                    player.onGround = true;
+                } else if (moveY > 0) { // Удар головой
+                    let lowestBottom = Infinity;
+                    hitsY.forEach(h => { if(h.box.min.y < lowestBottom) lowestBottom = h.box.min.y; });
+                    player.position.y = lowestBottom - 0.001;
+                    player.velocity.y = 0;
+                }
+            }
+
+            // --- ОСЬ X (Движение и шаг на блок) ---
+            if (moveX !== 0) {
+                player.position.x += moveX;
+                // Уменьшаем AABB снизу, чтобы не цепляться за пол при движении
+                let hitsX = getIntersectingBlocks(getPlayerAABB(player.position, 0.1));
+                if (hitsX.length > 0) {
+                    let canStep = true;
+                    let highestStep = -Infinity;
+                    hitsX.forEach(h => {
+                        let stepHeight = h.box.max.y - (player.position.y - player.height);
+                        if (stepHeight > 0.6) canStep = false; // Блок слишком высокий для шага
+                        if (h.box.max.y > highestStep) highestStep = h.box.max.y;
+                    });
+                    
+                    if (canStep && highestStep > -Infinity && player.onGround) {
+                        player.position.y = highestStep + player.height; // Зашагиваем
+                    } else {
+                        player.position.x -= moveX; // Отталкиваемся (скольжение)
+                    }
+                }
+            }
+
+            // --- ОСЬ Z (Движение и шаг на блок) ---
+            if (moveZ !== 0) {
+                player.position.z += moveZ;
+                let hitsZ = getIntersectingBlocks(getPlayerAABB(player.position, 0.1));
+                if (hitsZ.length > 0) {
+                    let canStep = true;
+                    let highestStep = -Infinity;
+                    hitsZ.forEach(h => {
+                        let stepHeight = h.box.max.y - (player.position.y - player.height);
+                        if (stepHeight > 0.6) canStep = false;
+                        if (h.box.max.y > highestStep) highestStep = h.box.max.y;
+                    });
+                    
+                    if (canStep && highestStep > -Infinity && player.onGround) {
+                        player.position.y = highestStep + player.height;
+                    } else {
+                        player.position.z -= moveZ;
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // 7. СЕТЬ И МУЛЬТИПЛЕЕР
+        // ==========================================
+        let peer;
+        let connections = []; 
+        let isHost = false;
+        const otherPlayers = {}; 
+
+        const playerGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+        const playerMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+
+        function createOtherPlayer(id, nick) {
+            const group = new THREE.Group();
+            const mesh = new THREE.Mesh(playerGeo, playerMat);
+            mesh.position.y = 0.9; 
+            group.add(mesh);
+
+            const div = document.createElement('div');
+            div.className = 'player-label'; div.textContent = nick;
+            const label = new THREE.CSS2DObject(div);
+            label.position.set(0, 2.0, 0);
+            group.add(label);
+
+            scene.add(group);
+            otherPlayers[id] = group;
+        }
+
+        function removeOtherPlayer(id) {
+            if(otherPlayers[id]) {
+                scene.remove(otherPlayers[id]);
+                delete otherPlayers[id];
+            }
+        }
+
+        function handleNetworkData(data, senderId) {
+            if (data.type === 'init') {
+                createOtherPlayer(data.id, data.nick);
+            } 
+            else if (data.type === 'move') {
+                if(otherPlayers[data.id]) {
+                    otherPlayers[data.id].position.set(data.x, data.y, data.z);
+                    otherPlayers[data.id].rotation.y = data.yaw;
+                }
+            }
+            else if (data.type === 'place') {
+                addBlock(data.bType, data.x, data.y, data.z);
+                if (isHost) broadcastData(data, senderId); 
+            }
+            else if (data.type === 'break') {
+                const mesh = worldBlocks.find(b => b.position.x === data.x && b.position.y === data.y && b.position.z === data.z);
+                if(mesh) removeBlock(mesh);
+                if (isHost) broadcastData(data, senderId);
+            }
+        }
+
+        function broadcastData(data, excludeId = null) {
+            const strData = JSON.stringify(data);
+            connections.forEach(conn => {
+                if (conn.open && conn.peer !== excludeId) conn.send(strData);
             });
         }
-
-        function userClick(r, c) {
-            if(!myTurn || gameOver || board[r][c] !== 0) return;
-
-            // Гравитация для 4 в ряд
-            if(currentGame === '7-6') {
-                let foundRow = -1;
-                for(let i=5; i>=0; i--) {
-                    if(board[i][c] === 0) { foundRow = i; break; }
-                }
-                if(foundRow === -1) return;
-                r = foundRow;
-            }
-
-            executeMove(r, c, isHost ? 1 : 2);
-            conn.send({type: 'move', r: r, c: c});
+        function sendDataToHost(data) {
+            if (connections[0] && connections[0].open) connections[0].send(JSON.stringify(data));
         }
 
-        function executeMove(r, c, p) {
-            board[r][c] = p;
-            renderGrid();
+        function initHost(roomId) {
+            const fullId = "WCraft_" + roomId;
+            peer = new Peer(fullId);
             
-            if(checkWin(r, c, p)) {
-                gameOver = true;
-                document.getElementById('game-status').innerText = (p === (isHost ? 1 : 2)) ? "ТЫ ВЫИГРАЛ! 🎉" : "ДРУГ ВЫИГРАЛ! 💀";
-                document.getElementById('reset-area').classList.remove('hidden');
-            } else if(board.flat().every(v => v !== 0)) {
-                document.getElementById('game-status').innerText = "НИЧЬЯ! 🤝";
-                document.getElementById('reset-area').classList.remove('hidden');
+            peer.on('open', (id) => {
+                document.getElementById('ui-room').innerText = roomId;
+                startGameUI();
+            });
+
+            peer.on('connection', (conn) => {
+                connections.push(conn);
+                conn.on('data', (data) => {
+                    const parsed = JSON.parse(data);
+                    handleNetworkData(parsed, conn.peer);
+                    if(parsed.type === 'move') broadcastData(parsed, conn.peer);
+                });
+                conn.on('close', () => removeOtherPlayer(conn.peer));
+            });
+            peer.on('error', err => setMenuError("Ошибка хоста: " + err.type));
+        }
+
+        function initClient(roomId) {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                const fullId = "WCraft_" + roomId;
+                const conn = peer.connect(fullId);
+                
+                conn.on('open', () => {
+                    connections.push(conn);
+                    document.getElementById('ui-room').innerText = roomId;
+                    conn.send(JSON.stringify({ type: 'init', id: peer.id, nick: player.nickname }));
+                    startGameUI();
+                });
+                
+                conn.on('data', (data) => handleNetworkData(JSON.parse(data), null));
+                conn.on('close', () => setMenuError("Соединение с хостом потеряно."));
+            });
+            peer.on('error', err => setMenuError("Ошибка: " + err.type));
+        }
+
+        // ==========================================
+        // 8. ИНТЕРФЕЙС И УПРАВЛЕНИЕ
+        // ==========================================
+        let input = { fwd: 0, right: 0 };
+        const zoneLeft = document.getElementById('touch-zone-left');
+        const zoneRight = document.getElementById('touch-zone-right');
+        const joyKnob = document.getElementById('joystick-knob');
+        let joyId = null, lookId = null;
+        let joyStartX = 0, joyStartY = 0;
+        let lastLookX = 0, lastLookY = 0;
+
+        function updateJoystick(x, y) {
+            let dx = x - joyStartX;
+            let dy = y - joyStartY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const max = 40;
+            if(dist > max) { dx = (dx/dist)*max; dy = (dy/dist)*max; }
+            joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            
+            input.right = dx / max;
+            input.fwd = -dy / max; 
+        }
+
+        zoneLeft.addEventListener('touchstart', e => {
+            e.preventDefault();
+            for(let t of e.changedTouches) {
+                if(joyId === null) {
+                    joyId = t.identifier;
+                    joyStartX = t.clientX; joyStartY = t.clientY;
+                    document.getElementById('joystick-base').style.left = (joyStartX - 60) + 'px';
+                    document.getElementById('joystick-base').style.top = (joyStartY - 60) + 'px';
+                    updateJoystick(t.clientX, t.clientY);
+                }
+            }
+        });
+        zoneLeft.addEventListener('touchmove', e => {
+            e.preventDefault();
+            for(let t of e.changedTouches) {
+                if(t.identifier === joyId) updateJoystick(t.clientX, t.clientY);
+            }
+        });
+        const endJoy = e => {
+            for(let t of e.changedTouches) {
+                if(t.identifier === joyId) {
+                    joyId = null; input.fwd = 0; input.right = 0;
+                    joyKnob.style.transform = `translate(0px, 0px)`;
+                    document.getElementById('joystick-base').style.left = '30px';
+                    document.getElementById('joystick-base').style.top = 'auto';
+                    document.getElementById('joystick-base').style.bottom = '30px';
+                }
+            }
+        };
+        zoneLeft.addEventListener('touchend', endJoy); zoneLeft.addEventListener('touchcancel', endJoy);
+
+        zoneRight.addEventListener('touchstart', e => {
+            e.preventDefault();
+            for(let t of e.changedTouches) {
+                if(lookId === null) {
+                    lookId = t.identifier;
+                    lastLookX = t.clientX; lastLookY = t.clientY;
+                }
+            }
+        });
+        zoneRight.addEventListener('touchmove', e => {
+            e.preventDefault();
+            for(let t of e.changedTouches) {
+                if(t.identifier === lookId) {
+                    const dx = t.clientX - lastLookX;
+                    const dy = t.clientY - lastLookY;
+                    player.yaw -= dx * 0.005;
+                    player.pitch -= dy * 0.005;
+                    player.pitch = Math.max(-Math.PI/2.1, Math.min(Math.PI/2.1, player.pitch));
+                    lastLookX = t.clientX; lastLookY = t.clientY;
+                }
+            }
+        });
+        const endLook = e => {
+            for(let t of e.changedTouches) if(t.identifier === lookId) lookId = null;
+        };
+        zoneRight.addEventListener('touchend', endLook); zoneRight.addEventListener('touchcancel', endLook);
+
+        const bindBtn = (id, action) => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); action(); });
+        };
+        bindBtn('btn-jump', () => { 
+            if(player.onGround) {
+                player.velocity.y = player.jumpForce; 
+                player.onGround = false;
+            }
+        });
+        bindBtn('btn-break', () => { interact('break'); });
+        bindBtn('btn-place', () => { interact('place'); });
+
+        document.getElementById('fullscreen-btn').addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        });
+
+        const raycaster = new THREE.Raycaster();
+        function interact(action) {
+            startPunchAnimation();
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            const intersects = raycaster.intersectObjects(worldBlocks);
+            
+            if(intersects.length > 0 && intersects[0].distance < 6) {
+                const hit = intersects[0];
+                if (action === 'break') {
+                    if(hit.object.position.y > -2) removeBlock(hit.object, true);
+                } else if (action === 'place') {
+                    const p = hit.object.position.clone().add(hit.face.normal);
+                    const blockBox = new THREE.Box3(new THREE.Vector3(p.x-0.5, p.y-0.5, p.z-0.5), new THREE.Vector3(p.x+0.5, p.y+0.5, p.z+0.5));
+                    if(!getPlayerAABB(player.position, 0).intersectsBox(blockBox)) {
+                        addBlock(hotbarTypes[activeSlot], p.x, p.y, p.z, true);
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // 9. ЛОГИКА МЕНЮ
+        // ==========================================
+        function setMenuError(text) { document.getElementById('menu-status').innerText = text; }
+
+        function startGame(mode) {
+            const nick = document.getElementById('nickname-input').value.trim() || "Steve" + Math.floor(Math.random()*100);
+            player.nickname = nick;
+            document.getElementById('ui-nick').innerText = nick;
+
+            if (mode === 'host') {
+                isHost = true;
+                let id = document.getElementById('host-id-input').value.trim();
+                if(!id || id.length !== 5) id = Math.floor(10000 + Math.random() * 90000).toString();
+                setMenuError("Создание сервера...");
+                initHost(id);
             } else {
-                myTurn = !myTurn;
-                refreshStatus();
+                isHost = false;
+                const id = document.getElementById('join-id-input').value.trim();
+                if(id.length !== 5) return setMenuError("Введите 5-значный ID хоста!");
+                setMenuError("Подключение...");
+                initClient(id);
             }
         }
 
-        function refreshStatus() {
-            const s = document.getElementById('game-status');
-            s.innerText = myTurn ? "ТВОЙ ХОД" : "ХОД ДРУГА...";
-            s.style.color = myTurn ? "var(--p2)" : "#555";
-        }
-
-        function requestRestart() {
-            conn.send({type: 'restart'});
-            beginGame(isHost);
-        }
-
-        function checkWin(r, c, p) {
-            const winNeeded = currentGame === '7-6' ? 4 : 3;
-            const directions = [[0,1],[1,0],[1,1],[1,-1]];
+        function startGameUI() {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('ui-layer').style.display = 'block';
+            player.position.set(0, 10, 0); 
+            updateChunks();
+            animate();
             
-            for(let [dr, dc] of directions) {
-                let count = 1;
-                // Вперед
-                for(let i=1; i<winNeeded; i++) {
-                    let nr=r+dr*i, nc=c+dc*i;
-                    if(nr>=0 && nr<board.length && nc>=0 && nc<board[0].length && board[nr][nc]===p) count++; else break;
-                }
-                // Назад
-                for(let i=1; i<winNeeded; i++) {
-                    let nr=r-dr*i, nc=c-dc*i;
-                    if(nr>=0 && nr<board.length && nc>=0 && nc<board[0].length && board[nr][nc]===p) count++; else break;
-                }
-                if(count >= winNeeded) return true;
-            }
-            return false;
+            setInterval(() => {
+                if(!peer || peer.disconnected) return;
+                const data = { type: 'move', id: peer.id, x: player.position.x, y: player.position.y, z: player.position.z, yaw: player.yaw };
+                if(isHost) broadcastData(data); else sendDataToHost(data);
+            }, 100);
         }
+
+        // ==========================================
+        // 10. ИГРОВОЙ ЦИКЛ (UPDATE)
+        // ==========================================
+        const clock = new THREE.Clock();
+        let frames = 0, lastTime = performance.now();
+        let walkTime = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+
+            frames++;
+            if(performance.now() - lastTime >= 1000) {
+                document.getElementById('ui-fps').innerText = frames;
+                frames = 0; lastTime = performance.now();
+                updateChunks(); 
+            }
+
+            // Камера
+            viewObj.rotation.y = player.yaw;
+            camera.rotation.x = player.pitch;
+
+            // Движение и коллизии
+            const dir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, player.yaw, 0)).normalize();
+            const right = new THREE.Vector3(1, 0, 0).applyEuler(new THREE.Euler(0, player.yaw, 0)).normalize();
+
+            const moveX = (dir.x * input.fwd + right.x * input.right) * player.speed * delta;
+            const moveZ = (dir.z * input.fwd + right.z * input.right) * player.speed * delta;
+
+            player.velocity.y -= player.gravity * delta;
+            const moveY = player.velocity.y * delta;
+
+            movePlayerWithCollisions(moveX, moveY, moveZ);
+
+            // Анимации и частицы
+            updateParticles(delta);
+            updateHandAnimation(delta);
+
+            // Анимация шагов (Bobbing)
+            if (player.onGround && (Math.abs(input.fwd) > 0.1 || Math.abs(input.right) > 0.1)) {
+                walkTime += delta * 14;
+                viewObj.position.set(player.position.x, player.position.y + Math.sin(walkTime)*0.08, player.position.z);
+                if (!isPunching) handGroup.rotation.z = Math.sin(walkTime) * 0.05;
+            } else {
+                viewObj.position.copy(player.position);
+                if (!isPunching) handGroup.rotation.z = 0;
+            }
+
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera); 
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
     </script>
 </body>
 </html>
