@@ -3,335 +3,534 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>WebCraft Ultra: Survival P2P</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+    <title>Угадай число: Мультиплеер</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --primary-color: #00ff88;
+            --secondary-color: #ff0055;
+            --panel-bg: #1e1e1e;
+        }
 
-    <link rel="stylesheet" href="style.css">
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 500px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #2a2a2a;
+            border: 2px solid #333;
+            color: white;
+            font-size: 18px;
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+            text-align: center;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: var(--primary-color);
+            color: #000;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+            transition: transform 0.1s, background 0.3s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            box-shadow: none;
+        }
+
+        #status {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #hints-panel {
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+
+        #hints-panel p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+
+        #history {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--panel-bg);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-radius: 8px;
+            background: #2a2a2a;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .history-item.my-guess { border-left: 4px solid var(--primary-color); }
+        .history-item.enemy-guess { border-left: 4px solid var(--secondary-color); }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .controls input {
+            margin: 0;
+            flex: 2;
+        }
+
+        .controls button {
+            margin: 0;
+            flex: 1;
+        }
+
+        /* Админ панель (ESP) */
+        #admin-panel {
+            display: none;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 0, 85, 0.9);
+            border: 2px solid #fff;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 9999;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        #admin-panel h3 {
+            margin: 0 0 10px 0;
+            color: white;
+            text-align: center;
+        }
+
+        #admin-panel p {
+            margin: 5px 0;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-    <div id="vfx-layer">
-        <div class="vignette"></div>
-        <div id="damage-overlay"></div>
+<div id="app">
+    <div id="admin-panel">
+        <h3>⚡ ESP ADMIN PANEL ⚡</h3>
+        <p>Загаданное число: <span id="esp-target" style="color: #00ff88; font-size: 20px;">----</span></p>
+        <p>Статус: <span style="color: #00ff88;">Невидимо для противника</span></p>
+        <button onclick="document.getElementById('admin-panel').style.display='none'" style="background: white; color: black; padding: 5px; margin-top: 10px;">Скрыть</button>
     </div>
 
-    <div id="main-menu">
-        <div class="menu-background">
-            </div>
+    <div id="login-screen" class="screen active">
+        <h1>Угадай Число</h1>
+        <input type="text" id="username" placeholder="Введи свой ник" maxlength="15">
         
-        <div class="menu-ui">
-            <header>
-                <h1 class="glitch-text" data-text="WEBCRAFT">WEBCRAFT</h1>
-                <span class="version-tag">ULTRA SURVIVAL v2.5</span>
-            </header>
-
-            <div class="main-options">
-                <div class="user-profile">
-                    <input type="text" id="nickname" placeholder="Введите имя..." maxlength="15">
-                    <div class="skin-preview" id="player-preview">
-                        </div>
-                </div>
-
-                <div class="connection-hub">
-                    <div class="hub-card" id="host-card">
-                        <h3>ХОСТ МИРА</h3>
-                        <p>Ваш ID: <span id="my-peer-id">----</span></p>
-                        <button class="btn-main" onclick="game.initHost()">СОЗДАТЬ СЕРВЕР</button>
-                    </div>
-
-                    <div class="hub-divider"></div>
-
-                    <div class="hub-card" id="join-card">
-                        <h3>ПОДКЛЮЧЕНИЕ</h3>
-                        <input type="text" id="join-id" placeholder="ID ХОСТА (5 цифр)">
-                        <button class="btn-main join-btn" onclick="game.initClient()">ВОЙТИ В МИР</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="menu-logs">
-                <div class="log-entry">Система готова к генерации...</div>
-            </div>
+        <div style="margin-top: 30px;">
+            <button id="btn-host">Создать игру (Хост)</button>
+            <div style="text-align: center; margin: 15px 0;">ИЛИ</div>
+            <input type="text" id="join-id" placeholder="Введи ID игры друга">
+            <button id="btn-join" class="secondary">Присоединиться</button>
         </div>
+        <div id="status"></div>
     </div>
 
-    <div id="game-hud" style="display: none;">
+    <div id="game-screen" class="screen">
+        <h1>Игра началась!</h1>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
+            <span id="player-names" style="color: #aaa;">Вы vs Противник</span>
+        </div>
+
+        <div id="hints-panel">
+            <p>Диапазон поиска:</p>
+            <p style="color: var(--primary-color); font-weight: bold; font-size: 20px;">
+                <span id="min-hint">1000</span> — <span id="max-hint">9999</span>
+            </p>
+            <p id="last-feedback" style="font-size: 14px; color: #aaa;">Введите ваше первое число</p>
+        </div>
+
+        <div id="history">
+            </div>
+
+        <div class="controls">
+            <input type="text" id="guess-input" placeholder="4 цифры или код" autocomplete="off">
+            <button id="btn-guess">Ввод</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Инициализация переменных
+    let peer = null;
+    let conn = null;
+    let myName = "";
+    let enemyName = "Противник";
+    let isHost = false;
+    
+    // Игровые переменные
+    let targetNumber = 0;
+    let minPossible = 1000;
+    let maxPossible = 9999;
+    let gameActive = false;
+    let isAdminUnlocked = false;
+
+    // Элементы UI
+    const loginScreen = document.getElementById('login-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const statusDiv = document.getElementById('status');
+    const historyDiv = document.getElementById('history');
+    const minHintSpan = document.getElementById('min-hint');
+    const maxHintSpan = document.getElementById('max-hint');
+    const lastFeedback = document.getElementById('last-feedback');
+    const guessInput = document.getElementById('guess-input');
+
+    // Функция генерации случайного 4-значного числа
+    function generateTarget() {
+        return Math.floor(1000 + Math.random() * 9000); // 1000 - 9999
+    }
+
+    // Обновление UI лобби
+    function setStatus(msg) {
+        statusDiv.innerText = msg;
+    }
+
+    // Инициализация соединения как Хост
+    document.getElementById('btn-host').addEventListener('click', () => {
+        myName = document.getElementById('username').value.trim() || "Игрок 1";
+        setStatus("Создание сервера...");
         
-        <div class="top-bar">
-            <div class="ping-indicator">
-                <div class="signal-bars">
-                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
-                </div>
-                <span id="ping-val">0 ms</span>
-            </div>
-            <div id="online-counter">Игроков: 1</div>
-        </div>
+        peer = new Peer(); // Генерируем случайный ID
 
-        <div class="survival-status">
-            <div id="health-container" class="status-row">
-                </div>
-            <div id="hunger-container" class="status-row">
-                </div>
-        </div>
+        peer.on('open', (id) => {
+            setStatus(`Твой ID игры: ${id}\nОтправь его другу!`);
+            // Копирование ID при клике на статус для удобства
+            statusDiv.style.cursor = "pointer";
+            statusDiv.onclick = () => {
+                navigator.clipboard.writeText(id);
+                alert("ID скопирован в буфер обмена!");
+            };
+        });
 
-        <div id="reticle">
-            <div class="dot"></div>
-            <svg class="reticle-svg" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" stroke="white" stroke-width="2" fill="none" />
-            </svg>
-        </div>
-
-        <div id="toast-notifications"></div>
-
-        <div class="bottom-ui">
-            <div id="hotbar-wrapper">
-                <div class="hotbar-selector" id="selector"></div>
-                <div class="hotbar-slots">
-                    <div class="slot" data-slot="0"><div class="item-count"></div></div>
-                    <div class="slot" data-slot="1"></div>
-                    <div class="slot" data-slot="2"></div>
-                    <div class="slot" data-slot="3"></div>
-                    <div class="slot" data-slot="4"></div>
-                    <div class="slot" data-slot="5"></div>
-                    <div class="slot" data-slot="6"></div>
-                    <div class="slot" data-slot="7"></div>
-                    <div class="slot" data-slot="8"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="touch-controls">
-            <div id="joystick-container">
-                <div id="joystick-outer">
-                    <div id="joystick-inner"></div>
-                </div>
-            </div>
-
-            <div class="action-buttons">
-                <div id="btn-jump" class="t-btn"><span>JUMP</span></div>
-                <div class="dual-actions">
-                    <div id="btn-attack" class="t-btn red"><span>HIT</span></div>
-                    <div id="btn-build" class="t-btn green"><span>USE</span></div>
-                </div>
-            </div>
-
-            <div id="btn-inventory" class="t-btn square"><span>INV</span></div>
-        </div>
-    </div>
-
-    <div id="webgl-output"></div>
-
-    <script>
-        // Инициализация глобального пространства имен
-        const WebCraft = {
-            version: "2.5.0",
-            settings: {
-                chunkSize: 16,
-                renderDistance: 4,
-                gravity: -0.012,
-                // Продолжение объекта WebCraft.settings
-                tickRate: 60,
-                maxPlayers: 8,
-                airResistance: 0.98,
-                playerHeight: 1.8,
-                reachDistance: 5,
-            },
-            
-            // Состояние игрока (проработка выживания)
-            state: {
-                hp: 20,         // 20 единиц = 10 сердец
-                hunger: 20,     // 20 единиц = 10 окорочков
-                isDead: false,
-                inventory: new Array(9).fill(null),
-                activeSlot: 0,
-                isMenuOpen: true
-            },
-
-            // Инициализация HUD (Сердца и Голод)
-            ui: {
-                initSurvivalBars() {
-                    const healthCont = document.getElementById('health-container');
-                    const hungerCont = document.getElementById('hunger-container');
-                    
-                    healthCont.innerHTML = '';
-                    hungerCont.innerHTML = '';
-
-                    // Генерация 10 сердец (каждое — 2 HP)
-                    for (let i = 0; i < 10; i++) {
-                        const heart = document.createElement('div');
-                        heart.className = 'heart full';
-                        heart.id = `heart-${i}`;
-                        healthCont.appendChild(heart);
-                    }
-
-                    // Генерация 10 единиц еды (каждая — 2 ед.)
-                    for (let i = 0; i < 10; i++) {
-                        const food = document.createElement('div');
-                        food.className = 'food full';
-                        food.id = `food-${i}`;
-                        hungerCont.appendChild(food);
-                    }
-                },
-
-                updateHP(value) {
-                    this.state.hp = Math.max(0, Math.min(20, value));
-                    for (let i = 0; i < 10; i++) {
-                        const heart = document.getElementById(`heart-${i}`);
-                        const heartVal = i * 2 + 2;
-                        if (this.state.hp >= heartVal) {
-                            heart.className = 'heart full';
-                        } else if (this.state.hp >= heartVal - 1) {
-                            heart.className = 'heart half';
-                        } else {
-                            heart.className = 'heart empty';
-                        }
-                    }
-                    if (this.state.hp <= 0) WebCraft.core.die();
-                },
-
-                showGame() {
-                    gsap.to("#main-menu", { opacity: 0, duration: 0.8, onComplete: () => {
-                        document.getElementById('main-menu').style.display = 'none';
-                        document.getElementById('game-hud').style.display = 'block';
-                        WebCraft.state.isMenuOpen = false;
-                        // Запрос захвата указателя для управления камерой
-                        document.body.requestPointerLock();
-                    }});
-                }
-            },
-
-            // Сетевой модуль (PeerJS интеграция)
-            network: {
-                peer: null,
-                conn: null,
-                id: null,
-
-                init(customId) {
-                    const finalId = customId || Math.floor(10000 + Math.random() * 90000).toString();
-                    this.peer = new Peer(finalId, {
-                        debug: 2,
-                        config: { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
-                    });
-
-                    this.peer.on('open', (id) => {
-                        this.id = id;
-                        document.getElementById('my-peer-id').innerText = id;
-                        console.log('Network: Connected with ID ' + id);
-                    });
-
-                    this.peer.on('error', (err) => {
-                        document.getElementById('menu-logs').innerHTML += `<div class="log-entry error">${err.type}</div>`;
-                    });
-
-                    // Ожидание входящих подключений (для Хоста)
-                    this.peer.on('connection', (conn) => {
-                        this.handleIncomingConnection(conn);
-                    });
-                },
-
-                handleIncomingConnection(conn) {
-                    this.conn = conn;
-                    conn.on('data', (data) => {
-                        // Обработка пакетов (позиция, блоки, чат)
-                        WebCraft.core.processPacket(data);
-                    });
-                                        // Продолжение WebCraft.network.handleIncomingConnection
-                    conn.on('open', () => {
-                        console.log('Network: Peer connected!');
-                        this.sendPacket({ type: 'handshake', nick: document.getElementById('nickname').value });
-                        WebCraft.ui.showGame();
-                    });
-                },
-
-                sendPacket(data) {
-                    if (this.conn && this.conn.open) {
-                        this.conn.send(data);
-                    }
-                },
-
-                broadcast(data) {
-                    // Метод для Хоста: разослать всем подключенным
-                    connections.forEach(c => {
-                        if (c.open) c.send(data);
-                    });
-                }
-            },
-
-            // ЯДРО ДВИЖКА (Управление состояниями)
-            core: {
-                init() {
-                    console.log("Core: Starting Ultra Engine...");
-                    WebCraft.ui.initSurvivalBars();
-                    
-                    // Слушатель для блокировки курсора (Pointer Lock)
-                    document.addEventListener('pointerlockchange', () => {
-                        const isLocked = document.pointerLockElement === document.body;
-                        WebCraft.state.isMenuOpen = !isLocked;
-                        // Если меню открыто — показываем курсор, если нет — прячем
-                    });
-                },
-
-                processPacket(packet) {
-                    switch(packet.type) {
-                        case 'pos':
-                            // Обновление позиции другого игрока (будет в main.js)
-                            if (window.updateRemotePlayer) window.updateRemotePlayer(packet);
-                            break;
-                        case 'block':
-                            // Синхронизация разрушения/установки блоков
-                            if (window.world) window.world.setBlock(packet.x, packet.y, packet.z, packet.id, false);
-                            break;
-                        case 'chat':
-                            console.log(`[Chat] ${packet.nick}: ${packet.msg}`);
-                            break;
-                    }
-                },
-
-                die() {
-                    WebCraft.state.isDead = true;
-                    document.getElementById('toast-notifications').innerHTML = `
-                        <div class="death-screen">
-                            <h1>ВЫ УМЕРЛИ</h1>
-                            <button onclick="location.reload()">ВОЗРОДИТЬСЯ</button>
-                        </div>
-                    `;
-                }
+        peer.on('connection', (connection) => {
+            if (conn) {
+                connection.close(); // Разрешаем только 1 подключение
+                return;
             }
-        };
+            conn = connection;
+            isHost = true;
+            setupConnection();
+        });
 
-        // ФУНКЦИИ ГЛОБАЛЬНОГО ВЫЗОВА (Кнопки меню)
-        function startGame(mode) {
-            const nick = document.getElementById('nickname').value || "Steve";
-            const hostId = document.getElementById('host-id').value;
-            const joinId = document.getElementById('join-id').value;
+        peer.on('error', (err) => {
+            setStatus("Ошибка: " + err.message);
+        });
+    });
 
-            if (mode === 'host') {
-                WebCraft.network.init(hostId);
-                // Инициализация мира как хост
-                window.initGameEngine(true); 
-            } else {
-                WebCraft.network.init();
-                setTimeout(() => {
-                    const conn = WebCraft.network.peer.connect(joinId);
-                    WebCraft.network.handleIncomingConnection(conn);
-                }, 1000);
-                window.initGameEngine(false);
-            }
-            WebCraft.ui.showGame();
+    // Инициализация соединения как Клиент
+    document.getElementById('btn-join').addEventListener('click', () => {
+        myName = document.getElementById('username').value.trim() || "Игрок 2";
+        const hostId = document.getElementById('join-id').value.trim();
+        
+        if (!hostId) {
+            setStatus("Введите ID игры!");
+            return;
         }
 
-        // Инициализация при загрузке
-        window.onload = () => {
-            WebCraft.core.init();
+        setStatus("Подключение...");
+        peer = new Peer();
+
+        peer.on('open', () => {
+            conn = peer.connect(hostId);
+            isHost = false;
+            setupConnection();
+        });
+
+        peer.on('error', (err) => {
+            setStatus("Ошибка подключения: " + err.message);
+        });
+    });
+
+    // Настройка обработчиков данных после установки P2P соединения
+    function setupConnection() {
+        conn.on('open', () => {
+            setStatus("Соединено! Запуск игры...");
             
-            // Плавное появление меню через GSAP
-            gsap.from(".menu-content", { y: 50, opacity: 0, duration: 1, ease: "power4.out" });
-        };
-    </script>
+            // Обмен именами
+            conn.send({ type: 'init', name: myName });
+
+            if (isHost) {
+                // Хост генерирует число и отправляет клиенту начало игры
+                targetNumber = generateTarget();
+                setTimeout(() => {
+                    conn.send({ type: 'start', target: targetNumber });
+                    startGame();
+                }, 500);
+            }
+        });
+
+        conn.on('data', (data) => {
+            if (data.type === 'init') {
+                enemyName = data.name;
+                document.getElementById('player-names').innerText = `${myName} vs ${enemyName}`;
+            } 
+            else if (data.type === 'start') {
+                targetNumber = data.target;
+                startGame();
+            }
+            else if (data.type === 'guess') {
+                processEnemyGuess(data.guess, data.name);
+            }
+        });
+
+        conn.on('close', () => {
+            alert("Противник отключился.");
+            location.reload();
+        });
+    }
+
+    // Переход на экран игры и сброс состояния
+    function startGame() {
+        loginScreen.classList.remove('active');
+        gameScreen.classList.active = true;
+        gameScreen.style.display = 'flex';
+        gameActive = true;
+        
+        // Сброс UI
+        historyDiv.innerHTML = '';
+        minPossible = 1000;
+        maxPossible = 9999;
+        updateHints();
+        lastFeedback.innerText = "Игра началась! Вводите число.";
+        
+        // Если это админ - обновляем ESP
+        if (myName === 'an6not') {
+            document.getElementById('esp-target').innerText = targetNumber;
+        }
+    }
+
+    // Обновление цифр диапазона на экране
+    function updateHints() {
+        minHintSpan.innerText = minPossible;
+        maxHintSpan.innerText = maxPossible;
+    }
+
+    // Обработка кнопки ввода
+    document.getElementById('btn-guess').addEventListener('click', handleMyInput);
+    guessInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleMyInput();
+    });
+
+    function handleMyInput() {
+        if (!gameActive) return;
+        
+        const inputVal = guessInput.value.trim();
+        guessInput.value = '';
+
+        // ПРОВЕРКА НА СЕКРЕТНУЮ ПАНЕЛЬ
+        if (myName === 'an6not' && inputVal === '//pass:admin') {
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('esp-target').innerText = targetNumber;
+            return; // Не отправляем это как игровой ход
+        }
+
+        // Парсинг числа
+        const guess = parseInt(inputVal, 10);
+        
+        if (isNaN(guess) || guess < 1000 || guess > 9999) {
+            lastFeedback.innerText = "Пожалуйста, введите 4-значное число (1000-9999).";
+            lastFeedback.style.color = "var(--secondary-color)";
+            return;
+        }
+
+        // Отправляем противнику
+        conn.send({ type: 'guess', guess: guess, name: myName });
+        
+        // Обрабатываем локально
+        processMyGuess(guess);
+    }
+
+    function processMyGuess(guess) {
+        let resultText = "";
+        let isWin = false;
+
+        if (guess === targetNumber) {
+            resultText = "ТОЧНО В ЦЕЛЬ!";
+            isWin = true;
+        } else if (guess < targetNumber) {
+            resultText = "Мое число БОЛЬШЕ";
+            if (guess >= minPossible) minPossible = guess + 1;
+        } else {
+            resultText = "Мое число МЕНЬШЕ";
+            if (guess <= maxPossible) maxPossible = guess - 1;
+        }
+
+        addHistoryItem(myName, guess, resultText, 'my-guess');
+        updateHints();
+        
+        lastFeedback.innerText = `Вы ввели ${guess}: ${resultText}`;
+        lastFeedback.style.color = "var(--primary-color)";
+
+        if (isWin) {
+            endGame(myName);
+        }
+    }
+
+    function processEnemyGuess(guess, eName) {
+        let resultText = "";
+        let isWin = false;
+
+        if (guess === targetNumber) {
+            resultText = "УГАДАЛ!";
+            isWin = true;
+        } else if (guess < targetNumber) {
+            resultText = "Больше";
+            if (guess >= minPossible) minPossible = guess + 1;
+        } else {
+            resultText = "Меньше";
+            if (guess <= maxPossible) maxPossible = guess - 1;
+        }
+
+        addHistoryItem(eName, guess, resultText, 'enemy-guess');
+        updateHints();
+        
+        lastFeedback.innerText = `Противник ввел ${guess}: ${resultText}`;
+        lastFeedback.style.color = "var(--secondary-color)";
+
+        if (isWin) {
+            endGame(eName);
+        }
+    }
+
+    // Добавление лога в историю
+    function addHistoryItem(player, guess, result, className) {
+        const div = document.createElement('div');
+        div.className = `history-item ${className}`;
+        div.innerHTML = `<span><b>${player}:</b> ${guess}</span> <span>${result}</span>`;
+        historyDiv.prepend(div); // Добавляем наверх
+    }
+
+    // Завершение игры и анимации
+    function endGame(winnerName) {
+        gameActive = false;
+        lastFeedback.innerText = `ИГРА ОКОНЧЕНА! Победитель: ${winnerName}. Число: ${targetNumber}`;
+        lastFeedback.style.color = "#fff";
+        lastFeedback.style.fontWeight = "bold";
+        guessInput.disabled = true;
+        document.getElementById('btn-guess').disabled = true;
+
+        if (winnerName === myName) {
+            triggerWinAnimation();
+        }
+    }
+
+    // Эффект конфетти при победе
+    function triggerWinAnimation() {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
+    }
+</script>
+
 </body>
 </html>
