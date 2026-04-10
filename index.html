@@ -2,265 +2,205 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mimic Test: Human or AI</title>
+    <title>Mimic Protocol v2.0</title>
     <style>
-        :root {
-            --bg: #0d1117;
-            --text: #c9d1d9;
-            --accent: #58a6ff;
-            --danger: #f85149;
-            --secret: #238636;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 400px;
-            background: #161b22;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            border: 1px solid #30363d;
-        }
-
-        .hidden { display: none !important; }
-
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 6px;
-            border: 1px solid #30363d;
-            background: #0d1117;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        button {
-            background: var(--accent);
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        button:hover { opacity: 0.8; }
-
-        /* Чат */
-        #chat-box {
-            height: 300px;
-            overflow-y: auto;
-            border: 1px solid #30363d;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .msg {
-            padding: 8px 12px;
-            margin: 4px;
-            border-radius: 8px;
-            max-width: 80%;
-        }
-
-        .msg.sent { background: var(--accent); align-self: flex-end; color: white; }
-        .msg.received { background: #30363d; align-self: flex-start; }
-
-        /* Чит-меню */
-        #cheat-menu {
-            background: #1c2128;
-            border: 1px dashed var(--secret);
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 8px;
-        }
-
-        .status-dot {
-            height: 10px;
-            width: 10px;
-            background-color: #bbb;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 5px;
-        }
-
-        .online { background-color: var(--secret); }
-
-        /* Анимация поиска */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--accent);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        :root { --bg: #05070a; --panel: #12141d; --accent: #00f2ff; --host: #7000ff; --guest: #ff0055; }
+        body { background: var(--bg); color: #e0e0e0; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: var(--panel); width: 380px; padding: 25px; border-radius: 5px; border: 1px solid #333; box-shadow: 0 0 20px rgba(0,242,255,0.1); position: relative; }
+        .hidden { display: none; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid var(--accent); color: var(--accent); text-align: center; font-size: 1.2em; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; cursor: pointer; border: none; font-weight: bold; text-transform: uppercase; transition: 0.2s; margin-top: 5px; }
+        .btn-blue { background: var(--accent); color: #000; }
+        .btn-host { background: var(--host); color: #fff; }
+        .btn-stop { background: var(--guest); color: #fff; }
+        
+        #chat-area { height: 250px; overflow-y: auto; border: 1px solid #222; margin: 10px 0; padding: 10px; display: flex; flex-direction: column; background: #080808; }
+        .m { margin: 5px; padding: 8px; border-radius: 4px; font-size: 0.9em; max-width: 85%; }
+        .m-host { align-self: flex-end; background: #1a1a3a; border-right: 3px solid var(--host); }
+        .m-guest { align-self: flex-start; background: #2a1018; border-left: 3px solid var(--guest); }
+        
+        .cheat-panel { border: 1px dashed var(--host); padding: 10px; margin-top: 15px; background: #0d001a; }
+        .status-bar { font-size: 10px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+        .loading-bar { height: 4px; background: #222; width: 100%; position: relative; overflow: hidden; }
+        .loading-bar::after { content: ""; position: absolute; left: -100%; width: 100%; height: 100%; background: var(--accent); animation: load 2s infinite; }
+        @keyframes load { 100% { left: 100%; } }
     </style>
 </head>
 <body>
 
-    <div class="container" id="auth-screen">
-        <h2>Вход в систему</h2>
-        <input type="text" id="username" placeholder="Введите ваш ник...">
-        <button onclick="checkUser()">Войти</button>
+    <div id="screen-auth" class="box">
+        <div class="status-bar">System Authentication</div>
+        <input type="text" id="nick" placeholder="NICKNAME">
+        <button class="btn-blue" onclick="auth()">INITIALIZE</button>
     </div>
 
-    <div class="container hidden" id="host-setup">
-        <h2 style="color: var(--secret)">Host Panel: annot</h2>
-        <p>Создайте пятизначный код для друга:</p>
-        <input type="text" id="host-code" maxlength="5" placeholder="Пример: 55432">
-        <button onclick="startHost()">Запустить лобби</button>
+    <div id="screen-host-setup" class="box hidden">
+        <div class="status-bar" style="color:var(--host)">Host Authority Detected</div>
+        <h1 id="generated-code" style="text-align:center; color:var(--accent); font-size: 3em; margin: 10px 0;">00000</h1>
+        <p style="font-size: 12px; text-align:center;">ПЕРЕДАЙТЕ ЭТОТ КОД ДРУГУ</p>
+        <button class="btn-host" onclick="startSession()">ОТКРЫТЬ КАНАЛ</button>
     </div>
 
-    <div class="container hidden" id="guest-setup">
-        <h2>Подключение</h2>
-        <input type="text" id="join-code" maxlength="5" placeholder="Введите 5-значный код...">
-        <button onclick="joinLobby()">Подключиться к сессии</button>
+    <div id="screen-guest-setup" class="box hidden">
+        <div class="status-bar">Connection Request</div>
+        <input type="text" id="input-code" maxlength="5" placeholder="00000">
+        <button class="btn-blue" onclick="tryConnect()">CONNECT TO HOST</button>
     </div>
 
-    <div class="container hidden" id="searching-screen">
-        <h2>Поиск противника...</h2>
-        <div class="loader"></div>
-        <p id="search-status">Ожидание подключения хоста...</p>
+    <div id="screen-wait" class="box hidden">
+        <div class="status-bar">Searching for opponent...</div>
+        <div class="loading-bar"></div>
+        <p style="text-align:center; margin-top:20px;">ПРОТОКОЛ СИНХРОНИЗАЦИИ...</p>
     </div>
 
-    <div class="container hidden" id="game-screen">
-        <div id="chat-header">
-            <span class="status-dot online"></span>
-            <span id="opponent-name">Собеседник</span>
-        </div>
-        <hr>
-        <div id="chat-box"></div>
-        <input type="text" id="chat-input" placeholder="Напишите сообщение...">
-        <button onclick="sendMessage()">Отправить</button>
-
-        <div id="cheat-menu" class="hidden">
-            <small style="color: var(--secret)">CHIT MENU ACTIVATED</small>
-            <div style="display:flex; gap: 5px; margin-top: 5px;">
-                <button style="background: #21262d; font-size: 10px;" onclick="toggleAI(true)">РЕЖИМ: ИИ</button>
-                <button style="background: #21262d; font-size: 10px;" onclick="toggleAI(false)">РЕЖИМ: ИГРОК</button>
+    <div id="screen-chat" class="box hidden">
+        <div class="status-bar" id="chat-info">Session: Active</div>
+        <div id="chat-area"></div>
+        <input type="text" id="msg-input" placeholder="Type message...">
+        
+        <div id="annot-tools" class="hidden">
+            <div class="cheat-panel">
+                <div style="font-size:10px; color:var(--host); margin-bottom:5px;">MASTER CONTROLS</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                    <button id="ai-toggle" onclick="toggleAI()" style="background:#222; color:white; font-size:10px;">MODE: HUMAN</button>
+                    <button class="btn-host" onmousedown="playSound()" onmouseup="stopSound()" style="font-size:10px;">NOISE ATTACK</button>
+                </div>
             </div>
-            <p id="mode-status" style="font-size: 10px; margin: 5px 0;">Текущий статус: Игрок</p>
         </div>
     </div>
 
     <script>
-        let currentUser = "";
+        const bc = new BroadcastChannel('game_channel');
+        let myNick = "";
         let isAnnot = false;
-        let sessionCode = "";
-        let isAIMode = false;
+        let myCode = "";
+        let isAI = false;
+        let noiseBuffer = null;
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let currentOsc = null;
 
-        function checkUser() {
-            currentUser = document.getElementById('username').value.trim();
-            if (currentUser === "") return;
+        // Генерация кода
+        function generateCode() {
+            return Math.floor(10000 + Math.random() * 90000).toString();
+        }
 
-            if (currentUser.toLowerCase() === "annot") {
+        function auth() {
+            myNick = document.getElementById('nick').value.trim();
+            if (!myNick) return;
+
+            if (myNick.toLowerCase() === 'annot') {
                 isAnnot = true;
-                showScreen('host-setup');
+                myCode = generateCode();
+                document.getElementById('generated-code').innerText = myCode;
+                hideAll(); document.getElementById('screen-host-setup').classList.remove('hidden');
             } else {
-                showScreen('guest-setup');
+                hideAll(); document.getElementById('screen-guest-setup').classList.remove('hidden');
             }
         }
 
-        function showScreen(id) {
-            document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
+        function startSession() {
+            bc.postMessage({ type: 'LOBBY_CREATED', code: myCode, host: myNick });
+            openChat();
         }
 
-        function startHost() {
-            sessionCode = document.getElementById('host-code').value;
-            if (sessionCode.length !== 5) {
-                alert("Код должен быть 5-значным!");
-                return;
-            }
-            // Сохраняем код в localStorage для эмуляции "сервера" на одном браузере
-            localStorage.setItem('active_session', sessionCode);
-            localStorage.setItem('host_name', currentUser);
+        function tryConnect() {
+            const code = document.getElementById('input-code').value;
+            hideAll(); document.getElementById('screen-wait').classList.remove('hidden');
             
-            document.getElementById('cheat-menu').classList.remove('hidden');
-            showScreen('game-screen');
-            addSystemMessage("Лобби создано. Ждем игрока...");
-        }
-
-        function joinLobby() {
-            const enteredCode = document.getElementById('join-code').value;
-            const savedCode = localStorage.getItem('active_session');
-
-            showScreen('searching-screen');
-
-            // Имитация поиска
             setTimeout(() => {
-                if (enteredCode === savedCode) {
-                    document.getElementById('opponent-name').innerText = localStorage.getItem('host_name');
-                    showScreen('game-screen');
-                    addSystemMessage("Соединение установлено!");
-                } else {
-                    alert("Код не найден или сессия не существует");
-                    showScreen('guest-setup');
-                }
+                bc.postMessage({ type: 'TRY_JOIN', code: code, guest: myNick });
             }, 2000);
         }
 
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (text === "") return;
+        function openChat() {
+            hideAll();
+            document.getElementById('screen-chat').classList.remove('hidden');
+            if (isAnnot) document.getElementById('annot-tools').classList.remove('hidden');
+        }
 
-            addMessage(text, 'sent');
-            input.value = "";
+        // Логика звука (Генерация резкого шума)
+        function playSound() {
+            bc.postMessage({ type: 'SOUND_START' });
+            _startLocalNoise();
+        }
 
-            // Если пишет друг (не annot), то сообщение "улетает" к annot
-            // Здесь логика для теста на одном экране:
-            if (!isAnnot) {
-                console.log("Сообщение для хоста:", text);
+        function stopSound() {
+            bc.postMessage({ type: 'SOUND_STOP' });
+            _stopLocalNoise();
+        }
+
+        function _startLocalNoise() {
+            if (currentOsc) return;
+            currentOsc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            currentOsc.type = 'sawtooth'; // Очень резкий звук
+            currentOsc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            currentOsc.connect(gain);
+            gain.connect(audioCtx.destination);
+            currentOsc.start();
+        }
+
+        function _stopLocalNoise() {
+            if (currentOsc) {
+                currentOsc.stop();
+                currentOsc = null;
             }
         }
 
-        function addMessage(text, type) {
-            const box = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.className = `msg ${type}`;
-            div.innerText = text;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+        // Сетевые сообщения
+        bc.onmessage = (e) => {
+            const data = e.data;
+
+            if (data.type === 'TRY_JOIN' && isAnnot) {
+                if (data.code === myCode) {
+                    bc.postMessage({ type: 'JOIN_SUCCESS', code: myCode });
+                    addMsg("Система", `Игрок ${data.guest} подключился`, 'sys');
+                }
+            }
+
+            if (data.type === 'JOIN_SUCCESS' && !isAnnot) {
+                openChat();
+                addMsg("Система", "Вы подключены к " + myCode, 'sys');
+            }
+
+            if (data.type === 'MSG') {
+                addMsg(data.user, data.text, data.role);
+            }
+
+            if (data.type === 'SOUND_START') _startLocalNoise();
+            if (data.type === 'SOUND_STOP') _stopLocalNoise();
+        };
+
+        function addMsg(user, text, role) {
+            const area = document.getElementById('chat-area');
+            const d = document.createElement('div');
+            d.className = `m ${role === 'host' ? 'm-host' : 'm-guest'}`;
+            d.innerHTML = `<strong>${user}:</strong> ${text}`;
+            area.appendChild(d);
+            area.scrollTop = area.scrollHeight;
         }
 
-        function addSystemMessage(text) {
-            const box = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.style.fontSize = "10px";
-            div.style.textAlign = "center";
-            div.style.color = "#8b949e";
-            div.style.margin = "10px 0";
-            div.innerText = text;
-            box.appendChild(div);
+        document.getElementById('msg-input').onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                const text = e.target.value;
+                const role = isAnnot ? 'host' : 'guest';
+                bc.postMessage({ type: 'MSG', text: text, user: myNick, role: role });
+                addMsg(myNick, text, role);
+                e.target.value = "";
+            }
+        };
+
+        function toggleAI() {
+            isAI = !isAI;
+            const btn = document.getElementById('ai-toggle');
+            btn.innerText = isAI ? "MODE: AI CLONE" : "MODE: HUMAN";
+            btn.style.color = isAI ? "var(--guest)" : "white";
         }
 
-        function toggleAI(val) {
-            isAIMode = val;
-            document.getElementById('mode-status').innerText = "Текущий статус: " + (isAIMode ? "Искусственный Интеллект" : "Игрок");
-            document.getElementById('mode-status').style.color = isAIMode ? "var(--danger)" : "var(--secret)";
+        function hideAll() {
+            document.querySelectorAll('.box').forEach(b => b.classList.add('hidden'));
         }
-
-        // Обработка Enter
-        document.getElementById('chat-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendMessage();
-        });
     </script>
 </body>
 </html>
